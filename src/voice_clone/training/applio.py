@@ -7,7 +7,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 from voice_clone.errors import TrainingError
-from voice_clone.training.commands import CommandRunner, require_tool, run_command
+from voice_clone.training.commands import CommandRunner, find_python, require_tool, run_command
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +40,7 @@ class Applio:
         runner: CommandRunner = run_command,
         head_reader: Callable[[Path], str] = git_head,
         platform: str = sys.platform,
+        python_finder: Callable[[str, str], list[str]] = find_python,
     ) -> None:
         self.root = root
         self.source_dir = root / f"Applio-{APPLIO_VERSION}"
@@ -48,6 +49,7 @@ class Applio:
         self._runner = runner
         self._head_reader = head_reader
         self._platform = platform
+        self._python_finder = python_finder
 
     @property
     def python(self) -> Path:
@@ -67,7 +69,7 @@ class Applio:
         if self.is_installed:
             return
         git = require_tool("git")
-        uv = require_tool("uv")
+        base_python = self._python_finder(APPLIO_PYTHON, self._platform)
         if self.source_dir.exists():
             shutil.rmtree(self.source_dir)
         self.root.mkdir(parents=True, exist_ok=True)
@@ -91,23 +93,13 @@ class Applio:
                 "The release may have changed; stopping for safety."
             )
 
-        self._runner([uv, "venv", "--python", APPLIO_PYTHON, ".venv"], cwd=self.source_dir)
-        install = [
-            uv,
-            "pip",
-            "install",
-            "--python",
-            str(self.python),
-            "-r",
-            "requirements-engine.txt",
-        ]
+        self._runner([*base_python, "-m", "venv", ".venv"], cwd=self.source_dir)
+        pip = [str(self.python), "-m", "pip", "install"]
+        self._runner([*pip, "--upgrade", "pip"], cwd=self.source_dir)
+        install = [*pip, "-r", "requirements-engine.txt"]
         if self._platform == "win32":
-            install += [
-                "--extra-index-url",
-                WINDOWS_TORCH_INDEX,
-                "--index-strategy",
-                "unsafe-best-match",
-            ]
+            # CUDA wheels carry a "+cu128" tag, which pip ranks above the plain CPU wheels.
+            install += ["--extra-index-url", WINDOWS_TORCH_INDEX]
         self._runner(install, cwd=self.source_dir)
 
         prerequisites = ["prerequisites", "--pretraineds-hifigan", "--models"]

@@ -7,18 +7,41 @@ It runs in the terminal (a Textual TUI).
 ## Requirements
 
 - Python 3.10, 3.11 or 3.12
-- [uv](https://docs.astral.sh/uv/)
 - A virtual audio device:
   - macOS: BlackHole 2ch. Install with `brew install blackhole-2ch`.
   - Windows: VB-Audio Virtual Cable (VB-CABLE), from https://vb-audio.com/Cable/
-- Windows with an NVIDIA GPU: nothing extra to do. `uv sync` installs the CUDA build of PyTorch automatically. Without a GPU, conversion runs on the CPU and may be slow.
+- Windows with an NVIDIA GPU: install the CUDA build of PyTorch first (see below). Without a GPU, conversion runs on the CPU and may be slow.
 
 ## Install and run
 
+Create a virtual environment and install the app (once):
+
+macOS:
+
+```bash
+python3.10 -m venv .venv
+source .venv/bin/activate
+pip install -e .
 ```
-uv sync
-uv run voice-clone
+
+Windows (PowerShell):
+
+```powershell
+py -3.10 -m venv .venv
+.venv\Scripts\Activate.ps1
+pip install torch==2.5.1 torchaudio==2.5.1 --index-url https://download.pytorch.org/whl/cu124
+pip install -e .
 ```
+
+The first `pip install` line on Windows gets the NVIDIA (CUDA) build of PyTorch. Skip it if you have no NVIDIA GPU.
+
+Then run the app:
+
+```bash
+python -m voice_clone run
+```
+
+In a new terminal, activate the environment again first (`source .venv/bin/activate`, or `.venv\Scripts\Activate.ps1` on Windows). After `pip install -e .`, the short command `voice-clone` works too.
 
 On the first start the app downloads about 550 MB of base models into `models/`. A progress bar shows the download. If it fails, check your connection and press "Retry download".
 
@@ -42,17 +65,17 @@ Full step-by-step guide: [docs/TRAINING.md](docs/TRAINING.md).
 Record 10–30 minutes of your own voice (for example with iPhone Voice Memos set to **Lossless**), copy the file(s) to this computer, then run:
 
 ```bash
-uv run voice-clone train path/to/recording.m4a --name my-voice
+python -m voice_clone train path/to/recording.m4a --name my-voice
 ```
 
 The command:
 
 1. Cleans the recordings (mono, 48 kHz, removes low hum, evens out loudness) into `training/<name>/dataset/`.
-2. The first time only: installs [Applio](https://github.com/IAHispano/Applio) 3.7.1 in `training/.applio/` with its own Python 3.12 environment, and downloads its pretrained models (several GB).
+2. The first time only: installs [Applio](https://github.com/IAHispano/Applio) 3.7.1 in `training/.applio/` in its own Python 3.12 virtual environment, and downloads its pretrained models (several GB).
 3. Slices the audio and extracts voice features (RMVPE pitch, ContentVec).
 4. Trains an RVC v2 model and copies the result to `voices/<name>/`.
 
-Needs `ffmpeg`, `git` and `uv` on the PATH. Training uses an NVIDIA GPU (Windows), the Apple GPU (Apple Silicon), or the CPU. On an M1 Mac, 200 epochs take several hours.
+Needs `ffmpeg`, `git` and **Python 3.12** (for Applio) installed. Training uses an NVIDIA GPU (Windows), the Apple GPU (Apple Silicon), or the CPU. On an M1 Mac, 200 epochs take several hours.
 
 Useful options:
 

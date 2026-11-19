@@ -12,16 +12,18 @@ You need:
 
 | Tool | Check | Install |
 | --- | --- | --- |
-| `uv` | `uv --version` | https://docs.astral.sh/uv/ |
+| Python 3.12 | macOS: `python3.12 --version` · Windows: `py -3.12 --version` | https://www.python.org/downloads/ (macOS: or `brew install python@3.12`) |
 | `git` | `git --version` | macOS: `xcode-select --install` · Windows: `winget install Git.Git` |
 | `ffmpeg` | `ffmpeg -version` | macOS: `brew install ffmpeg` · Windows: `winget install ffmpeg` |
 
 The first training run also:
 
-- installs Applio in `training/.applio/`, with its own Python 3.12 environment,
+- installs Applio in `training/.applio/`, in its own Python 3.12 virtual environment,
 - downloads Applio's pretrained models (several GB).
 
 Later runs skip this setup.
+
+The app itself must already be installed (see the README), and its virtual environment must be active (`source .venv/bin/activate`, or `.venv\Scripts\Activate.ps1` on Windows).
 
 ---
 
@@ -66,7 +68,7 @@ You can put several files in the `raw/` folder. The command uses all of them.
 ## Step 3 — Train
 
 ```bash
-caffeinate -i uv run voice-clone train training/voice-2/raw --name voice-2 --epochs 100
+caffeinate -i python -m voice_clone train training/voice-2/raw --name voice-2 --epochs 100
 ```
 
 - `--name` is the voice name shown in the app. Use only letters, numbers, `-` and `_`.
@@ -102,7 +104,7 @@ The command runs 4 steps:
 1. Run the app:
 
    ```bash
-   uv run voice-clone
+   python -m voice_clone run
    ```
 
 2. Pick the new voice in the **Voice** list and press **Start**.
@@ -132,7 +134,7 @@ The trained files are in `voices/<name>/`:
 See all options with:
 
 ```bash
-uv run voice-clone train --help
+python -m voice_clone train --help
 ```
 
 ---
@@ -143,7 +145,7 @@ uv run voice-clone train --help
 | --- | --- |
 | `A voice named '…' already exists` | Add `--force`, or choose another `--name`. |
 | `Only N s of audio found` | Record at least 1 minute. 10+ minutes is best. |
-| `'ffmpeg' was not found` (or `git`, `uv`) | Install the tool. See [Before you start](#before-you-start). |
+| `'ffmpeg' was not found` (or `git`, `Python 3.12`) | Install the tool. See [Before you start](#before-you-start). |
 | Out of memory during training | Add `--batch-size 4`. |
 | You changed the recordings, but the old ones are still used | Add `--restart`. |
 | The voice sounds robotic or metallic | Train again with fewer epochs, for example `--epochs 60 --restart --force`. |

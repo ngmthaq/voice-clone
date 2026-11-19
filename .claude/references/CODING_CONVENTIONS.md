@@ -6,9 +6,9 @@
 
 ```
 voice-clone/
-├── pyproject.toml          # uv project, ruff + pytest config
+├── pyproject.toml          # pip/hatchling project, ruff + pytest config
 ├── src/voice_clone/
-│   ├── __main__.py         # entry point: `uv run voice-clone`
+│   ├── __main__.py         # entry point: `python -m voice_clone`
 │   ├── app.py              # Textual App
 │   ├── ui/                 # screens, widgets, .tcss styles
 │   ├── audio/              # devices, input/output streams, ring buffer
@@ -71,6 +71,6 @@ voice-clone/
 
 ## Third-Party Libraries
 
-- Add dependencies only with `uv add`.
+- Add dependencies to `pyproject.toml`, then run `pip install -e ".[dev]"`.
 - Pin `torch` per platform in `pyproject.toml`.
 - Do not commit model files (`.pth`, `.index`) or `voices/` / `models/` folders.

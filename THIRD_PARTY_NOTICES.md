@@ -18,4 +18,4 @@ The pitch extractor weights (`rmvpe.pt`) are downloaded on first start from the 
 
 ## Python dependencies
 
-Python packages (PyTorch, Textual, sounddevice, and others) are installed by `uv sync` and keep their own licenses.
+Python packages (PyTorch, Textual, sounddevice, and others) are installed by `pip install -e .` and keep their own licenses.

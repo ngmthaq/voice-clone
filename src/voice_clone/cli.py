@@ -28,9 +28,10 @@ def main(argv: Sequence[str] | None = None) -> int:
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="voice-clone",
-        description="Real-time voice conversion. Run with no command for the TUI.",
+        description="Real-time voice conversion. 'run' (or no command) opens the TUI.",
     )
     commands = parser.add_subparsers(dest="command")
+    commands.add_parser("run", help="Open the voice changer (the default).")
     train = commands.add_parser(
         "train",
         help="Train a voice model from your recordings (runs locally with Applio).",

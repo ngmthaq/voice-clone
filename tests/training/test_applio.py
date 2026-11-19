@@ -5,6 +5,7 @@ import pytest
 
 from voice_clone.errors import TrainingError
 from voice_clone.training import applio as applio_module
+from voice_clone.training import commands as commands_module
 from voice_clone.training.applio import APPLIO_COMMIT, READY_MARKER, Applio
 
 
@@ -34,10 +35,18 @@ def _make(tmp_path: Path, platform: str = "darwin", head: str = APPLIO_COMMIT):
     ref: list[Applio] = []
     runner = RecordingRunner(ref)
     applio = Applio(
-        tmp_path / ".applio", runner=runner, head_reader=lambda _: head, platform=platform
+        tmp_path / ".applio",
+        runner=runner,
+        head_reader=lambda _: head,
+        platform=platform,
+        python_finder=lambda version, _: [f"/bin/python{version}"],
     )
     ref.append(applio)
     return applio, runner
+
+
+def _step(args: list[str]) -> str:
+    return next(s for s in ("clone", "venv", "pip", "prerequisites") if s in args)
 
 
 def test_install_runs_clone_venv_requirements_and_prerequisites(tmp_path: Path) -> None:
@@ -45,8 +54,9 @@ def test_install_runs_clone_venv_requirements_and_prerequisites(tmp_path: Path) 
 
     applio.ensure_installed()
 
-    steps = [call[0][1] if call[0][0].startswith("/bin/") else call[0][2] for call in runner.calls]
-    assert steps == ["clone", "venv", "pip", "prerequisites"]
+    steps = [_step(args) for args, _, _ in runner.calls]
+    assert steps == ["clone", "venv", "pip", "pip", "prerequisites"]
+    assert runner.calls[1][0][:3] == ["/bin/python3.12", "-m", "venv"]
     assert applio.is_installed
 
 
@@ -73,7 +83,7 @@ def test_install_on_windows_uses_cuda_index_and_downloads_exe(tmp_path: Path) ->
 
     applio.ensure_installed()
 
-    pip_args = next(args for args, _, _ in runner.calls if "pip" in args)
+    pip_args = next(args for args, _, _ in runner.calls if "-r" in args)
     prereq_args = next(args for args, _, _ in runner.calls if "prerequisites" in args)
     assert "--extra-index-url" in pip_args
     assert "--exe" in prereq_args
@@ -130,3 +140,25 @@ def test_extract_device_avoids_mps_on_macos(tmp_path: Path, platform: str, devic
 
     args = runner.calls[-1][0]
     assert args[args.index("--gpu") + 1] == device
+
+
+def test_find_python_uses_versioned_command(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(commands_module.shutil, "which", lambda name: f"/usr/bin/{name}")
+
+    assert commands_module.find_python("3.12", "darwin") == ["/usr/bin/python3.12"]
+
+
+def test_find_python_uses_windows_launcher(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(
+        commands_module.shutil, "which", lambda name: "C:/py.exe" if name == "py" else None
+    )
+    monkeypatch.setattr(commands_module, "_starts", lambda args: True)
+
+    assert commands_module.find_python("3.12", "win32") == ["C:/py.exe", "-3.12"]
+
+
+def test_find_python_missing_explains_how_to_install(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(commands_module.shutil, "which", lambda name: None)
+
+    with pytest.raises(TrainingError, match="Python 3.12 was not found"):
+        commands_module.find_python("3.12", "darwin")

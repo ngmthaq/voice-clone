@@ -48,3 +48,17 @@ def test_train_ctrl_c_returns_exit_code_130(monkeypatch: pytest.MonkeyPatch) -> 
 def test_train_rejects_unknown_sample_rate() -> None:
     with pytest.raises(SystemExit):
         cli.main(["train", "a.m4a", "--sample-rate", "22050"])
+
+
+@pytest.mark.parametrize("argv", [[], ["run"]])
+def test_run_and_no_command_open_the_app(monkeypatch: pytest.MonkeyPatch, argv) -> None:
+    opened = []
+
+    class FakeApp:
+        def run(self) -> None:
+            opened.append(True)
+
+    monkeypatch.setattr("voice_clone.app.VoiceCloneApp", FakeApp)
+
+    assert cli.main(argv) == 0
+    assert opened == [True]
