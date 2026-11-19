@@ -1,9 +1,12 @@
 import logging
+import threading
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
+import tqdm
 from huggingface_hub import hf_hub_download
+from huggingface_hub.utils import disable_progress_bars
 
 from voice_clone.errors import ModelDownloadError
 
@@ -42,6 +45,7 @@ def ensure_base_models(
     models_dir: Path, on_progress: ProgressCallback | None = None
 ) -> BaseModelPaths:
     paths = base_model_paths(models_dir)
+    _quiet_progress_bars()
     downloads = [
         (CONTENTVEC_REPO, name, paths.contentvec_dir, paths.contentvec_dir / name)
         for name in CONTENTVEC_FILES
@@ -63,6 +67,18 @@ def ensure_base_models(
             ) from error
         _report(on_progress, f"Downloaded {filename}", (index + 1) / total)
     return paths
+
+
+def _quiet_progress_bars() -> None:
+    """Make huggingface_hub downloads safe to run inside the TUI.
+
+    The app shows its own progress, so hub progress bars are turned off. tqdm still
+    creates a multiprocessing lock, which on Python 3.12 starts a helper process that
+    needs a real stderr. While Textual owns the terminal, stderr has no file number and
+    the download fails with "bad value(s) in fds_to_keep". A thread lock avoids that.
+    """
+    disable_progress_bars()
+    tqdm.tqdm.set_lock(threading.RLock())
 
 
 def _report(on_progress: ProgressCallback | None, message: str, fraction: float) -> None:

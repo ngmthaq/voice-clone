@@ -56,3 +56,14 @@ def test_hub_failure_raises_model_download_error(tmp_path, monkeypatch):
 
 def test_base_models_present_is_false_for_empty_folder(tmp_path):
     assert not base_models_present(tmp_path)
+
+
+def test_progress_bars_use_a_thread_lock_inside_the_tui(tmp_path, fake_hub):
+    # A multiprocessing lock needs a real stderr, which the TUI does not have (Python 3.12).
+    import threading
+
+    import tqdm
+
+    ensure_base_models(tmp_path)
+
+    assert isinstance(tqdm.tqdm.get_lock(), type(threading.RLock()))
