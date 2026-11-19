@@ -41,8 +41,13 @@ MainScreen {
     margin-top: 0;
 }
 
-.gate-field Input {
+.setting-row Input {
     width: 1fr;
+}
+
+.hint {
+    color: $text-muted;
+    text-style: italic;
 }
 
 #start-button {

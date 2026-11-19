@@ -36,6 +36,7 @@ NO_VIRTUAL_DEVICE_MESSAGE = (
 )
 NO_VOICES_MESSAGE = "No voices found. Put a voice in voices/<name>/model.pth"
 DEFAULT_GATE = GateSettings()
+DEFAULT_INDEX_PERCENT = 50
 # id, label, settings field, minimum, maximum, input type
 GATE_FIELDS = (
     ("gate-hold", "Hold (ms)", "hold_ms", 0, 2000, "integer"),
@@ -55,6 +56,7 @@ class MainScreen(Screen[None]):
         self._loaded_profile: str | None = None
         self._pipeline: ConversionPipeline | None = None
         self._pitch = self._settings.pitch
+        self._index_percent = self._settings.index_percent
         self._gate = GateSettings(
             hold_ms=self._settings.gate_hold_ms,
             pre_open_ms=self._settings.gate_pre_open_ms,
@@ -82,6 +84,18 @@ class MainScreen(Screen[None]):
                 yield Button("-", id="pitch-down")
                 yield Label("", id="pitch-label")
                 yield Button("+", id="pitch-up")
+            with Horizontal(id="index-row", classes="setting-row"):
+                yield Label("Index voice (%)", classes="row-label")
+                yield Input(
+                    str(self._index_percent),
+                    placeholder=f"default {DEFAULT_INDEX_PERCENT}",
+                    type="integer",
+                    validators=[Number(minimum=0, maximum=100)],
+                    id="index-percent",
+                )
+            yield Static(
+                "0 = all your live voice, 100 = all the trained voice (index)", classes="hint"
+            )
             yield Label("Noise gate: silences the mic between words", classes="field-label")
             for field_id, label, name, minimum, maximum, kind in GATE_FIELDS:
                 with Horizontal(classes="setting-row gate-field"):
@@ -146,6 +160,15 @@ class MainScreen(Screen[None]):
         name = next(name for field_id, _, name, *_ in GATE_FIELDS if field_id == event.input.id)
         value = float(event.value) if name == "open_above_floor_db" else int(event.value)
         self._apply_gate(replace(self._gate, **{name: value}))
+
+    @on(Input.Changed, "#index-percent")
+    def _on_index_changed(self, event: Input.Changed) -> None:
+        if not event.value or (event.validation_result and not event.validation_result.is_valid):
+            return
+        self._index_percent = int(event.value)
+        if self._engine is not None:
+            self._engine.index_rate = self._index_percent / 100
+        self._save_current_settings()
 
     @on(Button.Pressed, "#gate-reset")
     def _on_gate_reset(self) -> None:
@@ -267,6 +290,7 @@ class MainScreen(Screen[None]):
                 engine.load(profile)
                 self._loaded_profile = profile.name
             engine.set_pitch(pitch)
+            engine.index_rate = self._index_percent / 100
             pipeline = ConversionPipeline(
                 engine,
                 input_device,
@@ -352,6 +376,7 @@ class MainScreen(Screen[None]):
         for field_id, *_ in GATE_FIELDS:
             self.query_one(f"#{field_id}", Input).disabled = self._working
         self.query_one("#gate-reset", Button).disabled = self._working
+        self.query_one("#index-percent", Input).disabled = self._working
         if self._converting:
             start.label = "Stop"
             start.variant = "error"
@@ -390,6 +415,7 @@ class MainScreen(Screen[None]):
             output_device=self._selected_name("#output-select"),
             profile=self._selected_name("#voice-select"),
             pitch=self._pitch,
+            index_percent=self._index_percent,
             gate_hold_ms=self._gate.hold_ms,
             gate_pre_open_ms=self._gate.pre_open_ms,
             gate_open_above_db=self._gate.open_above_floor_db,

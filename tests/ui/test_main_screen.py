@@ -113,3 +113,40 @@ def test_disabled_button_does_not_change_on_hover(empty_environment):
     before, hovered = _run(body)
 
     assert hovered == before
+
+
+def test_index_percent_shows_saved_value_and_is_saved(empty_environment, tmp_path):
+    (tmp_path / "settings.toml").write_text("index_percent = 70\n")
+
+    async def body(app, pilot):
+        shown = app.screen.query_one("#index-percent").value
+        app.screen.query_one("#index-percent").value = "40"
+        await pilot.pause()
+        return shown
+
+    assert _run(body) == "70"
+    assert config.load_settings().index_percent == 40
+
+
+def test_index_percent_out_of_range_is_not_saved(empty_environment):
+    async def body(app, pilot):
+        app.screen.query_one("#index-percent").value = "150"
+        await pilot.pause()
+
+    _run(body)
+
+    assert config.load_settings().index_percent == 50
+
+
+def test_index_percent_change_applies_to_running_engine(empty_environment):
+    class FakeEngine:
+        index_rate = 0.5
+
+    async def body(app, pilot):
+        engine = FakeEngine()
+        app.screen._engine = engine
+        app.screen.query_one("#index-percent").value = "80"
+        await pilot.pause()
+        return engine.index_rate
+
+    assert _run(body) == 0.8
