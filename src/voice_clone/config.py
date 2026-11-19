@@ -17,6 +17,9 @@ class Settings(BaseModel):
     output_device: str | None = None
     profile: str | None = None
     pitch: int = Field(0, ge=-12, le=12)
+    gate_hold_ms: int = Field(500, ge=0, le=2000)
+    gate_pre_open_ms: int = Field(100, ge=0, le=400)
+    gate_open_above_db: float = Field(6.0, ge=0, le=30)
 
 
 def settings_path() -> Path:

@@ -14,9 +14,17 @@ MainScreen {
     color: $text-muted;
 }
 
-#pitch-row {
+/* Pitch and the three gate settings: one row each, label on the left. */
+.setting-row {
     height: 3;
     margin-top: 1;
+}
+
+.row-label {
+    width: 22;
+    height: 3;
+    content-align: left middle;
+    color: $text-muted;
 }
 
 #pitch-row Button {
@@ -24,9 +32,17 @@ MainScreen {
 }
 
 #pitch-label {
-    width: 18;
+    width: 9;
     height: 3;
     content-align: center middle;
+}
+
+.gate-field {
+    margin-top: 0;
+}
+
+.gate-field Input {
+    width: 1fr;
 }
 
 #start-button {
@@ -58,4 +74,40 @@ LevelMeterWidget {
 
 #status.running {
     color: $success;
+}
+
+#gate-reset {
+    margin-top: 1;
+    width: 100%;
+}
+
+/* Disabled controls must look inactive: no hover highlight, no clickable pointer. */
+Button.-style-default:disabled:hover {
+    background: $surface;
+    border-top: tall $surface-lighten-1;
+}
+
+Button.-style-default.-primary:disabled:hover {
+    background: $primary;
+    border-top: tall $primary-lighten-3;
+}
+
+Button.-style-default.-success:disabled:hover {
+    background: $success;
+    border-top: tall $success-lighten-2;
+}
+
+Button.-style-default.-warning:disabled:hover {
+    background: $warning;
+    border-top: tall $warning-lighten-2;
+}
+
+Button.-style-default.-error:disabled:hover {
+    background: $error;
+    border-top: tall $error-lighten-2;
+}
+
+Select:disabled > SelectCurrent,
+Input:disabled {
+    pointer: not-allowed;
 }

@@ -1,15 +1,18 @@
 import logging
 from collections.abc import Sequence
+from dataclasses import replace
 
 from textual import on, work
 from textual.app import ComposeResult
 from textual.containers import Horizontal, VerticalScroll
 from textual.screen import Screen
-from textual.widgets import Button, Footer, Header, Label, ProgressBar, Select, Static
+from textual.validation import Number
+from textual.widgets import Button, Footer, Header, Input, Label, ProgressBar, Select, Static
 
 from voice_clone.audio import (
     AudioDevice,
     ConversionPipeline,
+    GateSettings,
     find_device_by_name,
     find_virtual_output,
     list_input_devices,
@@ -32,6 +35,13 @@ NO_VIRTUAL_DEVICE_MESSAGE = (
     "No virtual audio device found. Install BlackHole 2ch (macOS) or VB-CABLE (Windows)."
 )
 NO_VOICES_MESSAGE = "No voices found. Put a voice in voices/<name>/model.pth"
+DEFAULT_GATE = GateSettings()
+# id, label, settings field, minimum, maximum, input type
+GATE_FIELDS = (
+    ("gate-hold", "Hold (ms)", "hold_ms", 0, 2000, "integer"),
+    ("gate-pre-open", "Open early (ms)", "pre_open_ms", 0, 400, "integer"),
+    ("gate-open-db", "Above noise (dB)", "open_above_floor_db", 0, 30, "number"),
+)
 
 
 class MainScreen(Screen[None]):
@@ -45,6 +55,11 @@ class MainScreen(Screen[None]):
         self._loaded_profile: str | None = None
         self._pipeline: ConversionPipeline | None = None
         self._pitch = self._settings.pitch
+        self._gate = GateSettings(
+            hold_ms=self._settings.gate_hold_ms,
+            pre_open_ms=self._settings.gate_pre_open_ms,
+            open_above_floor_db=self._settings.gate_open_above_db,
+        )
         self._models_ready = False
         self._working = False
         self._converting = False
@@ -62,10 +77,23 @@ class MainScreen(Screen[None]):
             yield Select[str]([], id="output-select", prompt="Select an output device")
             yield Label("Voice", classes="field-label")
             yield Select[str]([], id="voice-select", prompt="Select a voice")
-            with Horizontal(id="pitch-row"):
+            with Horizontal(id="pitch-row", classes="setting-row"):
+                yield Label("Pitch (semitones)", classes="row-label")
                 yield Button("-", id="pitch-down")
                 yield Label("", id="pitch-label")
                 yield Button("+", id="pitch-up")
+            yield Label("Noise gate: silences the mic between words", classes="field-label")
+            for field_id, label, name, minimum, maximum, kind in GATE_FIELDS:
+                with Horizontal(classes="setting-row gate-field"):
+                    yield Label(label, classes="row-label")
+                    yield Input(
+                        _format_number(getattr(self._gate, name)),
+                        placeholder=f"default {_format_number(getattr(DEFAULT_GATE, name))}",
+                        type=kind,
+                        validators=[Number(minimum=minimum, maximum=maximum)],
+                        id=field_id,
+                    )
+            yield Button("Reset gate to defaults", id="gate-reset")
             yield Button("Start", id="start-button", variant="primary")
             yield LevelMeterWidget("Input", id="input-meter")
             yield LevelMeterWidget("Output", id="output-meter")
@@ -110,6 +138,28 @@ class MainScreen(Screen[None]):
     @on(Button.Pressed, "#pitch-up")
     def _on_pitch_up(self) -> None:
         self._change_pitch(self._pitch + 1)
+
+    @on(Input.Changed, ".gate-field Input")
+    def _on_gate_changed(self, event: Input.Changed) -> None:
+        if not event.value or (event.validation_result and not event.validation_result.is_valid):
+            return
+        name = next(name for field_id, _, name, *_ in GATE_FIELDS if field_id == event.input.id)
+        value = float(event.value) if name == "open_above_floor_db" else int(event.value)
+        self._apply_gate(replace(self._gate, **{name: value}))
+
+    @on(Button.Pressed, "#gate-reset")
+    def _on_gate_reset(self) -> None:
+        for field_id, _, name, *_ in GATE_FIELDS:
+            self.query_one(f"#{field_id}", Input).value = _format_number(
+                getattr(DEFAULT_GATE, name)
+            )
+        self._apply_gate(DEFAULT_GATE)
+
+    def _apply_gate(self, settings: GateSettings) -> None:
+        self._gate = settings
+        if self._pipeline is not None:
+            self._pipeline.set_gate_settings(settings)
+        self._save_current_settings()
 
     @on(Select.Changed)
     def _on_selection_changed(self) -> None:
@@ -223,6 +273,7 @@ class MainScreen(Screen[None]):
                 output_device,
                 on_levels=self._store_levels,
                 on_error=self._store_error,
+                gate_settings=self._gate,
             )
             pipeline.warm_up()
             pipeline.start()
@@ -290,7 +341,7 @@ class MainScreen(Screen[None]):
         self._save_current_settings()
 
     def _refresh_pitch_label(self) -> None:
-        self.query_one("#pitch-label", Label).update(f"Pitch: {self._pitch:+d}")
+        self.query_one("#pitch-label", Label).update(f"{self._pitch:+d}")
 
     def _refresh_controls(self) -> None:
         locked = self._working or self._converting
@@ -298,6 +349,9 @@ class MainScreen(Screen[None]):
             self.query_one(selector, Select).disabled = locked
         start = self.query_one("#start-button", Button)
         start.disabled = self._working
+        for field_id, *_ in GATE_FIELDS:
+            self.query_one(f"#{field_id}", Input).disabled = self._working
+        self.query_one("#gate-reset", Button).disabled = self._working
         if self._converting:
             start.label = "Stop"
             start.variant = "error"
@@ -336,8 +390,15 @@ class MainScreen(Screen[None]):
             output_device=self._selected_name("#output-select"),
             profile=self._selected_name("#voice-select"),
             pitch=self._pitch,
+            gate_hold_ms=self._gate.hold_ms,
+            gate_pre_open_ms=self._gate.pre_open_ms,
+            gate_open_above_db=self._gate.open_above_floor_db,
         )
         try:
             save_settings(settings)
         except OSError:
             logger.warning("Could not save settings", exc_info=True)
+
+
+def _format_number(value: float) -> str:
+    return f"{value:g}"

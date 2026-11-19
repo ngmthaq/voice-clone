@@ -17,7 +17,7 @@ def _make(engine, in_rate=48000, out_rate=48000, **kwargs):
 
 
 def _block(pipeline, rate):
-    frames = rate * 250 // 1000
+    frames = pipeline._input_frames
     return (np.random.default_rng(0).standard_normal(frames) * 0.1).astype(np.float32)
 
 
@@ -65,7 +65,7 @@ def fake_sd(monkeypatch):
 
 
 def test_engine_input_length_is_context_plus_hop(fake_engine):
-    assert _make(fake_engine).engine_input_length == 12000
+    assert _make(fake_engine).engine_input_length == 16000 * (700 + 400) // 1000
 
 
 @pytest.mark.parametrize("rate", [48000, 44100])
@@ -75,13 +75,13 @@ def test_every_convert_call_gets_fixed_length_input(fake_engine, rate):
     for _ in range(60):
         pipeline.process_block(_block(pipeline, rate))
 
-    assert set(fake_engine.convert_lengths) == {12000}
+    assert set(fake_engine.convert_lengths) == {pipeline.engine_input_length}
 
 
 @pytest.mark.parametrize("rate", [48000, 44100])
 def test_every_output_block_has_exact_length_and_dtype(fake_engine, rate):
     pipeline = _make(fake_engine, in_rate=rate, out_rate=rate)
-    expected = rate * 250 // 1000
+    expected = pipeline._output_frames
 
     outputs = [pipeline.process_block(_block(pipeline, rate)) for _ in range(60)]
 
@@ -101,7 +101,8 @@ def test_constant_engine_output_has_no_jumps_between_blocks():
 def test_crossfade_ramps_previous_tail_down_into_new_block():
     engine = FakeEngine(value=1.0)
     pipeline = _make(engine, crossfade_ms=50)
-    hop = np.zeros(pipeline._hop, dtype=np.float32)
+    pipeline._gate.process = lambda audio: audio
+    hop = np.full(pipeline._hop, 0.1, dtype=np.float32)
     pipeline._convert_hop(hop)
     engine.value = 0.0
 
@@ -118,7 +119,7 @@ def test_warm_up_calls_engine_with_fixed_length(fake_engine):
 
     pipeline.warm_up()
 
-    assert fake_engine.convert_lengths == [12000]
+    assert fake_engine.convert_lengths == [pipeline.engine_input_length]
 
 
 def test_start_opens_and_starts_both_streams(fake_engine, fake_sd):
@@ -166,7 +167,7 @@ def test_running_pipeline_reports_levels_from_input_callback(fake_engine, fake_s
     pipeline.start()
     try:
         input_stream = FakeStream.instances[0]
-        input_stream.callback(np.full((12000, 1), 0.1, dtype=np.float32), 12000, None, None)
+        input_stream.callback(np.full((19200, 1), 0.1, dtype=np.float32), 19200, None, None)
 
         assert levels.wait(timeout=5)
     finally:
@@ -179,7 +180,7 @@ def test_output_callback_fills_buffer_with_converted_audio(fake_engine, fake_sd)
     pipeline.start()
     try:
         FakeStream.instances[0].callback(
-            np.full((12000, 1), 0.1, dtype=np.float32), 12000, None, None
+            np.full((19200, 1), 0.1, dtype=np.float32), 19200, None, None
         )
         levels.wait(timeout=5)
         out = np.zeros((12000, 2), dtype=np.float32)
@@ -212,7 +213,7 @@ def test_engine_error_calls_on_error_and_ends_worker(fake_sd):
     pipeline.start()
     try:
         FakeStream.instances[0].callback(
-            np.full((12000, 1), 0.1, dtype=np.float32), 12000, None, None
+            np.full((19200, 1), 0.1, dtype=np.float32), 19200, None, None
         )
 
         assert done.wait(timeout=5)
@@ -260,3 +261,26 @@ def test_hum_filter_is_continuous_across_blocks(fake_engine):
     )
 
     np.testing.assert_allclose(chunked, whole, atol=1e-5)
+
+
+def test_silence_skips_the_engine_and_outputs_zeros(fake_engine):
+    pipeline = _make(fake_engine)
+    silence = np.zeros(pipeline._input_frames, dtype=np.float32)
+
+    outputs = [pipeline.process_block(silence) for _ in range(10)]
+
+    assert len(fake_engine.convert_lengths) <= 1
+    assert np.abs(np.concatenate(outputs[2:])).max() == 0.0
+
+
+def test_dropped_blocks_are_logged_while_running(fake_engine, caplog):
+    pipeline = _make(fake_engine)
+    pipeline.dropped_blocks = 2
+
+    with caplog.at_level("WARNING"):
+        pipeline._report_drops()
+        pipeline._report_drops()
+
+    assert [r.getMessage() for r in caplog.records] == [
+        "Conversion fell behind: dropped 2 audio block(s) (total 2)"
+    ]

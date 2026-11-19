@@ -10,6 +10,7 @@ import soxr
 from scipy.signal import butter, sosfilt
 
 from voice_clone.audio.devices import AudioDevice
+from voice_clone.audio.noise_gate import GateSettings, NoiseGate
 from voice_clone.audio.ring_buffer import RingBuffer
 from voice_clone.errors import DeviceNotFoundError
 
@@ -19,7 +20,9 @@ LevelCallback = Callable[[float, float], None]
 ErrorCallback = Callable[[Exception], None]
 
 ENGINE_INPUT_RATE = 16000
-QUEUE_BLOCKS = 8
+# Small on purpose: if conversion falls behind, drop audio instead of building a delay
+# that keeps playing after you stop talking.
+QUEUE_BLOCKS = 3
 RING_BLOCKS = 4
 FIFO_PRIME_MS = 50
 OUTPUT_PRIME_MS = 40
@@ -45,15 +48,17 @@ class ConversionPipeline:
         output_device: AudioDevice,
         on_levels: LevelCallback | None = None,
         on_error: ErrorCallback | None = None,
-        block_ms: int = 250,
-        context_ms: int = 500,
-        crossfade_ms: int = 50,
+        block_ms: int = 400,
+        context_ms: int = 700,
+        crossfade_ms: int = 80,
+        gate_settings: GateSettings | None = None,
     ) -> None:
         self._engine = engine
         self._input_device = input_device
         self._output_device = output_device
         self._on_levels = on_levels
         self._on_error = on_error
+        self._gate_settings = gate_settings or GateSettings()
         self._input_rate = int(input_device.default_samplerate)
         self._output_rate = int(output_device.default_samplerate)
         self._engine_in_rate = engine.input_sample_rate
@@ -71,6 +76,7 @@ class ConversionPipeline:
         self._worker: threading.Thread | None = None
         self._streams: list[Any] = []
         self.dropped_blocks = 0
+        self._reported_drops = 0
 
         self._reset_state()
 
@@ -86,6 +92,8 @@ class ConversionPipeline:
         if self._worker is not None:
             return
         self._reset_state()
+        self.dropped_blocks = 0
+        self._reported_drops = 0
         self._stop_event.clear()
         self._open_streams()
         self._worker = threading.Thread(
@@ -107,6 +115,12 @@ class ConversionPipeline:
         worker, self._worker = self._worker, None
         if worker is not None and worker is not threading.current_thread():
             worker.join(timeout=JOIN_SECONDS)
+        if self.dropped_blocks:
+            logger.warning("Conversion fell behind: dropped %d audio blocks", self.dropped_blocks)
+
+    def set_gate_settings(self, settings: GateSettings) -> None:
+        self._gate_settings = settings
+        self._gate.configure(settings)
 
     def warm_up(self) -> None:
         self._engine.convert(np.zeros(self.engine_input_length, dtype=np.float32))
@@ -131,11 +145,20 @@ class ConversionPipeline:
         return filtered.astype(np.float32, copy=False)
 
     def _convert_hop(self, hop: np.ndarray) -> np.ndarray:
+        hop = self._gate.process(hop)
         engine_input = np.concatenate([self._history, hop])
         self._history = engine_input[len(engine_input) - self._context_samples :]
+        body_len = round(self._hop * self._engine_ratio)
+
+        silent = not hop.any()
+        if silent and self._last_hop_silent:
+            # The model turns silence into faint noise, so output true silence instead.
+            # The first silent hop still runs, so the last word fades out naturally.
+            self._tail = np.zeros_like(self._tail)
+            return np.zeros(body_len, dtype=np.float32)
+        self._last_hop_silent = silent
 
         converted = np.asarray(self._engine.convert(engine_input), dtype=np.float32)
-        body_len = round(self._hop * self._engine_ratio)
         fade_len = len(self._tail)
         segment = _tail_or_pad(converted, body_len + fade_len)
 
@@ -157,6 +180,8 @@ class ConversionPipeline:
             HUM_FILTER_ORDER, HUM_FILTER_HZ, btype="highpass", fs=self._engine_in_rate, output="sos"
         )
         self._hum_state = np.zeros((self._hum_sos.shape[0], 2))
+        self._gate = NoiseGate(self._engine_in_rate, self._gate_settings)
+        self._last_hop_silent = False
         self._history = np.zeros(self._context_samples, dtype=np.float32)
         self._fifo = np.zeros(self._engine_in_rate * FIFO_PRIME_MS // 1000, dtype=np.float32)
         fade_len = round(self._crossfade_samples * self._engine_ratio)
@@ -222,6 +247,16 @@ class ConversionPipeline:
     def _output_callback(self, outdata: np.ndarray, frames: int, time: Any, status: Any) -> None:
         outdata[:] = self._ring.read(frames)[:, None]
 
+    def _report_drops(self) -> None:
+        dropped = self.dropped_blocks
+        if dropped != self._reported_drops:
+            logger.warning(
+                "Conversion fell behind: dropped %d audio block(s) (total %d)",
+                dropped - self._reported_drops,
+                dropped,
+            )
+            self._reported_drops = dropped
+
     def _run_worker(self) -> None:
         while not self._stop_event.is_set():
             try:
@@ -231,6 +266,7 @@ class ConversionPipeline:
             try:
                 output = self.process_block(block)
                 self._ring.write(output)
+                self._report_drops()
                 if self._on_levels is not None:
                     self._on_levels(_rms(block), _rms(output))
             except Exception as exc:
