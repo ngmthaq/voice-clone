@@ -65,7 +65,7 @@ def fake_sd(monkeypatch):
 
 
 def test_engine_input_length_is_context_plus_hop(fake_engine):
-    assert _make(fake_engine).engine_input_length == 16000 * (700 + 400) // 1000
+    assert _make(fake_engine).engine_input_length == 16000 * (1000 + 400) // 1000
 
 
 @pytest.mark.parametrize("rate", [48000, 44100])
@@ -204,7 +204,7 @@ def test_stream_open_failure_raises_device_not_found(fake_engine, fake_sd):
 
 def test_engine_error_calls_on_error_and_ends_worker(fake_sd):
     class BrokenEngine(FakeEngine):
-        def convert(self, audio):
+        def convert(self, audio, tail=None):
             raise RuntimeError("boom")
 
     errors: list[Exception] = []
@@ -284,3 +284,42 @@ def test_dropped_blocks_are_logged_while_running(fake_engine, caplog):
     assert [r.getMessage() for r in caplog.records] == [
         "Conversion fell behind: dropped 2 audio block(s) (total 2)"
     ]
+
+
+def test_set_context_ms_changes_engine_input_on_next_hop(fake_engine):
+    pipeline = _make(fake_engine)
+    pipeline._gate.process = lambda hop: hop  # keep the gate open on steady test noise
+    for _ in range(5):
+        pipeline.process_block(_block(pipeline, 48000))
+
+    pipeline.set_context_ms(1200)
+    fake_engine.convert_lengths.clear()
+    for _ in range(5):
+        pipeline.process_block(_block(pipeline, 48000))
+
+    assert set(fake_engine.convert_lengths) == {16000 * (1200 + 400) // 1000}
+
+
+def test_set_context_ms_is_clamped(fake_engine):
+    pipeline = _make(fake_engine)
+
+    pipeline.set_context_ms(50)
+
+    assert pipeline.engine_input_length == 16000 * (200 + 400) // 1000
+
+
+def test_pipeline_asks_engine_only_for_hop_plus_crossfade():
+    class TailEngine(FakeEngine):
+        tails: list = []
+
+        def convert(self, audio, tail=None):
+            self.tails.append(tail)
+            return super().convert(audio, tail)
+
+    engine = TailEngine()
+    pipeline = _make(engine)
+    pipeline._gate.process = lambda hop: hop
+
+    pipeline.process_block(_block(pipeline, 48000))
+
+    assert set(engine.tails) == {16000 * (400 + 80) // 1000}

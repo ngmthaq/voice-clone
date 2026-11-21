@@ -34,3 +34,14 @@ def test_load_out_of_range_pitch_returns_defaults(tmp_path):
     path.write_text("pitch = 99\n")
 
     assert load_settings(path) == Settings()
+
+
+def test_advanced_voice_defaults():
+    settings = Settings()
+
+    assert (
+        settings.protect_percent,
+        settings.loudness_percent,
+        settings.pitch_smoothing_ms,
+        settings.context_ms,
+    ) == (67, 50, 30, 1000)

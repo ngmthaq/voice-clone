@@ -18,6 +18,10 @@ class Settings(BaseModel):
     profile: str | None = None
     pitch: int = Field(0, ge=-12, le=12)
     index_percent: int = Field(50, ge=0, le=100)
+    protect_percent: int = Field(67, ge=0, le=100)
+    loudness_percent: int = Field(50, ge=0, le=100)
+    pitch_smoothing_ms: int = Field(30, ge=0, le=200)
+    context_ms: int = Field(1000, ge=200, le=2000)
     gate_hold_ms: int = Field(500, ge=0, le=2000)
     gate_pre_open_ms: int = Field(100, ge=0, le=400)
     gate_open_above_db: float = Field(6.0, ge=0, le=30)

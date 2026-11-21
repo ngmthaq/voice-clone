@@ -4,10 +4,22 @@ from dataclasses import replace
 
 from textual import on, work
 from textual.app import ComposeResult
-from textual.containers import Horizontal, VerticalScroll
+from textual.containers import Horizontal, Vertical, VerticalScroll
 from textual.screen import Screen
 from textual.validation import Number
-from textual.widgets import Button, Footer, Header, Input, Label, ProgressBar, Select, Static
+from textual.widget import Widget
+from textual.widgets import (
+    Button,
+    Footer,
+    Header,
+    Input,
+    Label,
+    ProgressBar,
+    Select,
+    Static,
+    TabbedContent,
+    TabPane,
+)
 
 from voice_clone.audio import (
     AudioDevice,
@@ -36,12 +48,81 @@ NO_VIRTUAL_DEVICE_MESSAGE = (
 )
 NO_VOICES_MESSAGE = "No voices found. Put a voice in voices/<name>/model.pth"
 DEFAULT_GATE = GateSettings()
-DEFAULT_INDEX_PERCENT = 50
+DEFAULT_SETTINGS = Settings()
+DEFAULT_INDEX_PERCENT = DEFAULT_SETTINGS.index_percent
+# id, label, settings field, minimum, maximum, hint shown under the input
+INDEX_FIELD = (
+    "index-percent",
+    "Index voice (%)",
+    "index_percent",
+    0,
+    100,
+    "0 = your live voice, 100 = the trained voice (closer match, less clear)",
+)
+ADVANCED_VOICE_FIELDS = (
+    (
+        "protect-percent",
+        "Protect consonants (%)",
+        "protect_percent",
+        0,
+        100,
+        "Keeps consonants (s, t, k) clear when Index is high. 0 = off",
+    ),
+    (
+        "loudness-percent",
+        "Follow mic volume (%)",
+        "loudness_percent",
+        0,
+        100,
+        "0 = the model sets the volume, 100 = it follows how loud you speak",
+    ),
+    (
+        "pitch-smoothing",
+        "Pitch smoothing (ms)",
+        "pitch_smoothing_ms",
+        0,
+        200,
+        "Removes pitch jumps that sound like a wobble. 0 = off",
+    ),
+    (
+        "context-ms",
+        "Context (ms)",
+        "context_ms",
+        200,
+        2000,
+        "More = clearer words, no extra delay, but more CPU/GPU. Lower it if audio drops",
+    ),
+)
+VOICE_FIELDS = (INDEX_FIELD, *ADVANCED_VOICE_FIELDS)
 # id, label, settings field, minimum, maximum, input type
 GATE_FIELDS = (
-    ("gate-hold", "Hold (ms)", "hold_ms", 0, 2000, "integer"),
-    ("gate-pre-open", "Open early (ms)", "pre_open_ms", 0, 400, "integer"),
-    ("gate-open-db", "Above noise (dB)", "open_above_floor_db", 0, 30, "number"),
+    (
+        "gate-hold",
+        "Hold (ms)",
+        "hold_ms",
+        0,
+        2000,
+        "integer",
+        "How long the mic stays open after you stop. Lower cuts room echo sooner",
+    ),
+    (
+        "gate-pre-open",
+        "Open early (ms)",
+        "pre_open_ms",
+        0,
+        400,
+        "integer",
+        "Opens this much before a word, so soft first sounds (s, f, h) are kept",
+    ),
+    (
+        "gate-open-db",
+        "Above noise (dB)",
+        "open_above_floor_db",
+        0,
+        30,
+        "number",
+        "How much louder than background hiss your voice must be. Raise it if noise gets in",
+    ),
 )
 
 
@@ -56,7 +137,9 @@ class MainScreen(Screen[None]):
         self._loaded_profile: str | None = None
         self._pipeline: ConversionPipeline | None = None
         self._pitch = self._settings.pitch
-        self._index_percent = self._settings.index_percent
+        self._voice_options = {
+            name: int(getattr(self._settings, name)) for _, _, name, *_ in VOICE_FIELDS
+        }
         self._gate = GateSettings(
             hold_ms=self._settings.gate_hold_ms,
             pre_open_ms=self._settings.gate_pre_open_ms,
@@ -73,47 +156,75 @@ class MainScreen(Screen[None]):
     def compose(self) -> ComposeResult:
         yield Header()
         with VerticalScroll(id="panel"):
-            yield Label("Input microphone", classes="field-label")
-            yield Select[str]([], id="input-select", prompt="Select a microphone")
-            yield Label("Output device", classes="field-label")
-            yield Select[str]([], id="output-select", prompt="Select an output device")
-            yield Label("Voice", classes="field-label")
-            yield Select[str]([], id="voice-select", prompt="Select a voice")
-            with Horizontal(id="pitch-row", classes="setting-row"):
-                yield Label("Pitch (semitones)", classes="row-label")
-                yield Button("-", id="pitch-down")
-                yield Label("", id="pitch-label")
-                yield Button("+", id="pitch-up")
-            with Horizontal(id="index-row", classes="setting-row"):
-                yield Label("Index voice (%)", classes="row-label")
-                yield Input(
-                    str(self._index_percent),
-                    placeholder=f"default {DEFAULT_INDEX_PERCENT}",
-                    type="integer",
-                    validators=[Number(minimum=0, maximum=100)],
-                    id="index-percent",
-                )
-            yield Static(
-                "0 = all your live voice, 100 = all the trained voice (index)", classes="hint"
-            )
-            yield Label("Noise gate: silences the mic between words", classes="field-label")
-            for field_id, label, name, minimum, maximum, kind in GATE_FIELDS:
-                with Horizontal(classes="setting-row gate-field"):
-                    yield Label(label, classes="row-label")
-                    yield Input(
-                        _format_number(getattr(self._gate, name)),
-                        placeholder=f"default {_format_number(getattr(DEFAULT_GATE, name))}",
-                        type=kind,
-                        validators=[Number(minimum=minimum, maximum=maximum)],
-                        id=field_id,
+            with TabbedContent(id="tabs"):
+                with TabPane("Simple", id="simple-tab"):
+                    yield from _field(
+                        "Input microphone",
+                        Select[str]([], id="input-select", prompt="Select a microphone"),
                     )
-            yield Button("Reset gate to defaults", id="gate-reset")
-            yield Button("Start", id="start-button", variant="primary")
-            yield LevelMeterWidget("Input", id="input-meter")
-            yield LevelMeterWidget("Output", id="output-meter")
-            yield ProgressBar(total=1.0, show_eta=False, id="download-progress")
-            yield Static("", id="status")
+                    yield from _field(
+                        "Output device",
+                        Select[str]([], id="output-select", prompt="Select an output device"),
+                    )
+                    yield from _field(
+                        "Voice",
+                        Select[str]([], id="voice-select", prompt="Select a voice"),
+                    )
+                    yield from _field(
+                        "Pitch (semitones)",
+                        Horizontal(
+                            Button("-", id="pitch-down"),
+                            Label("", id="pitch-label"),
+                            Button("+", id="pitch-up"),
+                            id="pitch-row",
+                        ),
+                    )
+                    yield from self._voice_field(INDEX_FIELD)
+                with TabPane("Advanced", id="advanced-tab"):
+                    yield Label("Voice match", classes="section-title")
+                    for field in ADVANCED_VOICE_FIELDS:
+                        yield from self._voice_field(field)
+                    yield Button("Reset voice match to defaults", id="voice-reset")
+                    yield Label(
+                        "Noise gate: silences the mic between words", classes="section-title"
+                    )
+                    for field_id, label, name, minimum, maximum, kind, hint in GATE_FIELDS:
+                        default = _format_number(getattr(DEFAULT_GATE, name))
+                        yield from _field(
+                            label,
+                            Input(
+                                _format_number(getattr(self._gate, name)),
+                                placeholder=f"default {default}",
+                                type=kind,
+                                validators=[Number(minimum=minimum, maximum=maximum)],
+                                id=field_id,
+                            ),
+                            hint,
+                            "gate-field",
+                        )
+                    yield Button("Reset gate to defaults", id="gate-reset")
+            with Vertical(id="controls"):
+                yield Button("Start", id="start-button", variant="primary")
+                yield LevelMeterWidget("Input", id="input-meter")
+                yield LevelMeterWidget("Output", id="output-meter")
+                yield ProgressBar(total=1.0, show_eta=False, id="download-progress")
+                yield Static("", id="status")
         yield Footer()
+
+    def _voice_field(self, field: tuple[str, str, str, int, int, str]) -> ComposeResult:
+        field_id, label, name, minimum, maximum, hint = field
+        yield from _field(
+            label,
+            Input(
+                str(self._voice_options[name]),
+                placeholder=f"default {getattr(DEFAULT_SETTINGS, name)}",
+                type="integer",
+                validators=[Number(minimum=minimum, maximum=maximum)],
+                id=field_id,
+            ),
+            hint,
+            "voice-field",
+        )
 
     def on_mount(self) -> None:
         self.query_one("#download-progress", ProgressBar).display = False
@@ -161,14 +272,33 @@ class MainScreen(Screen[None]):
         value = float(event.value) if name == "open_above_floor_db" else int(event.value)
         self._apply_gate(replace(self._gate, **{name: value}))
 
-    @on(Input.Changed, "#index-percent")
-    def _on_index_changed(self, event: Input.Changed) -> None:
+    @on(Input.Changed, ".voice-field Input")
+    def _on_voice_option_changed(self, event: Input.Changed) -> None:
         if not event.value or (event.validation_result and not event.validation_result.is_valid):
             return
-        self._index_percent = int(event.value)
-        if self._engine is not None:
-            self._engine.index_rate = self._index_percent / 100
+        name = next(name for field_id, _, name, *_ in VOICE_FIELDS if field_id == event.input.id)
+        self._voice_options[name] = int(event.value)
+        self._apply_voice_options()
         self._save_current_settings()
+
+    @on(Button.Pressed, "#voice-reset")
+    def _on_voice_reset(self) -> None:
+        for field_id, _, name, *_ in ADVANCED_VOICE_FIELDS:
+            self.query_one(f"#{field_id}", Input).value = str(getattr(DEFAULT_SETTINGS, name))
+
+    def _apply_voice_options(
+        self, engine: RvcEngine | None = None, pipeline: ConversionPipeline | None = None
+    ) -> None:
+        options = self._voice_options
+        engine = engine or self._engine
+        pipeline = pipeline or self._pipeline
+        if engine is not None:
+            engine.index_rate = options["index_percent"] / 100
+            engine.protect = options["protect_percent"] / 100
+            engine.loudness_follow = options["loudness_percent"] / 100
+            engine.pitch_smoothing_ms = options["pitch_smoothing_ms"]
+        if pipeline is not None:
+            pipeline.set_context_ms(options["context_ms"])
 
     @on(Button.Pressed, "#gate-reset")
     def _on_gate_reset(self) -> None:
@@ -290,13 +420,14 @@ class MainScreen(Screen[None]):
                 engine.load(profile)
                 self._loaded_profile = profile.name
             engine.set_pitch(pitch)
-            engine.index_rate = self._index_percent / 100
+            self._apply_voice_options(engine=engine)
             pipeline = ConversionPipeline(
                 engine,
                 input_device,
                 output_device,
                 on_levels=self._store_levels,
                 on_error=self._store_error,
+                context_ms=self._voice_options["context_ms"],
                 gate_settings=self._gate,
             )
             pipeline.warm_up()
@@ -368,15 +499,12 @@ class MainScreen(Screen[None]):
         self.query_one("#pitch-label", Label).update(f"{self._pitch:+d}")
 
     def _refresh_controls(self) -> None:
+        # While loading or running, every setting is locked; stop to change them.
         locked = self._working or self._converting
-        for selector in ("#input-select", "#output-select", "#voice-select"):
-            self.query_one(selector, Select).disabled = locked
+        for widget in self.query("#tabs Select, #tabs Input, #tabs Button"):
+            widget.disabled = locked
         start = self.query_one("#start-button", Button)
         start.disabled = self._working
-        for field_id, *_ in GATE_FIELDS:
-            self.query_one(f"#{field_id}", Input).disabled = self._working
-        self.query_one("#gate-reset", Button).disabled = self._working
-        self.query_one("#index-percent", Input).disabled = self._working
         if self._converting:
             start.label = "Stop"
             start.variant = "error"
@@ -415,7 +543,7 @@ class MainScreen(Screen[None]):
             output_device=self._selected_name("#output-select"),
             profile=self._selected_name("#voice-select"),
             pitch=self._pitch,
-            index_percent=self._index_percent,
+            **self._voice_options,
             gate_hold_ms=self._gate.hold_ms,
             gate_pre_open_ms=self._gate.pre_open_ms,
             gate_open_above_db=self._gate.open_above_floor_db,
@@ -424,6 +552,14 @@ class MainScreen(Screen[None]):
             save_settings(settings)
         except OSError:
             logger.warning("Could not save settings", exc_info=True)
+
+
+def _field(label: str, control: Widget, hint: str = "", kind: str = "") -> ComposeResult:
+    """Every setting looks the same: label, the control, a hint if it needs one, then a space."""
+    parts: list[Widget] = [Label(label, classes="field-label"), control]
+    if hint:
+        parts.append(Static(hint, classes="hint"))
+    yield Vertical(*parts, classes=f"field {kind}".strip())
 
 
 def _format_number(value: float) -> str:

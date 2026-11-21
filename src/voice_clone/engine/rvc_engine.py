@@ -8,6 +8,7 @@ from typing import Any, Protocol
 import numpy as np
 import torch
 import torch.nn.functional as F
+from scipy.signal import medfilt
 from torch import nn
 
 from voice_clone.engine.download import BaseModelPaths
@@ -33,6 +34,14 @@ PITCH_HOP = 160
 CONTENT_PAD = 320
 INDEX_NEIGHBOURS = 8
 V1_FEATURE_LAYER = 9
+PITCH_FRAME_MS = 10
+# Loudness envelope used to make the output follow the microphone: 40 ms windows every 10 ms.
+LOUDNESS_FRAME = 640
+LOUDNESS_HOP = 160
+LOUDNESS_FLOOR = 1e-3
+# When only the end of the audio is needed, decode this many extra 10 ms frames before it,
+# so the decoder's start-up edge falls outside the part that is kept.
+DECODE_MARGIN_FRAMES = 10
 
 
 class ContentEncoder(Protocol):
@@ -58,7 +67,14 @@ class _LoadedVoice:
 
 
 class RvcEngine:
+    # These can be changed while the engine runs; the next block uses the new value.
     index_rate: float = 0.5
+    # 0 = consonants get the full index mix, 1 = consonants keep the live voice features.
+    protect: float = 0.67
+    # 0 = the model sets the loudness, 1 = the output follows the microphone loudness.
+    loudness_follow: float = 0.5
+    # Median filter length for the pitch curve; 0 turns it off.
+    pitch_smoothing_ms: int = 30
 
     def __init__(
         self,
@@ -102,41 +118,79 @@ class RvcEngine:
             self._device,
         )
 
-    def convert(self, audio: np.ndarray) -> np.ndarray:
+    def convert(self, audio: np.ndarray, tail: int | None = None) -> np.ndarray:
+        """Convert 16 kHz audio to the voice.
+
+        With `tail`, only the last `tail` input samples are returned. The whole input is
+        still used as context, but only the end is synthesized, which is faster and keeps
+        long context within GPU limits.
+        """
         voice = self._voice
         if voice is None:
             raise ModelLoadError("No voice is loaded.")
-        expected = round(len(audio) * voice.target_rate / INPUT_SAMPLE_RATE)
         if len(audio) == 0:
             return np.zeros(0, dtype=np.float32)
+        audio = np.ascontiguousarray(audio, dtype=np.float32)
+        if tail is not None:
+            tail = max(1, min(int(tail), len(audio)))
         with self._lock:
-            converted = self._infer(voice, np.ascontiguousarray(audio, dtype=np.float32))
-        return _fit_length(converted, expected)
+            converted, source = self._infer(voice, audio, tail)
+        expected = round(len(source) * voice.target_rate / INPUT_SAMPLE_RATE)
+        return _follow_loudness(source, _fit_length(converted, expected), self.loudness_follow)
 
-    def _infer(self, voice: _LoadedVoice, audio: np.ndarray) -> np.ndarray:
+    def _infer(
+        self, voice: _LoadedVoice, audio: np.ndarray, tail: int | None
+    ) -> tuple[np.ndarray, np.ndarray]:
+        """Return the converted audio and the part of `audio` it covers."""
         assert self._content_encoder is not None and self._pitch_extractor is not None
         padded = _pad_tail(audio, CONTENT_PAD)
         with torch.inference_mode():
             tensor = torch.from_numpy(padded).to(self._device).unsqueeze(0)
-            feats = self._content_encoder.encode(tensor, voice.version).float()
-            feats = self._blend_index(voice, feats)
-            feats = F.interpolate(feats.permute(0, 2, 1), scale_factor=2, mode="nearest")
-            feats = feats.permute(0, 2, 1)
+            live = self._content_encoder.encode(tensor, voice.version).float()
+            feats = self._blend_index(voice, live)
+            feats = _upsample_frames(feats)
+            live = _upsample_frames(live)
             frames = feats.shape[1]
             net_args: tuple[torch.Tensor, ...] = ()
             if voice.has_pitch:
                 pitch, pitchf = self._pitch_tensors(padded, frames)
                 frames = min(frames, pitch.shape[1])
                 feats, pitch, pitchf = feats[:, :frames], pitch[:, :frames], pitchf[:, :frames]
+                feats = self._protect_consonants(feats, live[:, :frames], pitchf)
                 net_args = (pitch, pitchf)
             lengths = torch.tensor([frames], dtype=torch.long, device=self._device)
             sid = torch.zeros(1, dtype=torch.long, device=self._device)
-            output = voice.net_g.infer(feats, lengths, *net_args, sid)[0]
-        return output.squeeze().float().cpu().numpy()
+            if tail is None:
+                output = voice.net_g.infer(feats, lengths, *net_args, sid)[0]
+                return output.squeeze().float().cpu().numpy(), audio
+            start = len(audio) - tail
+            first = max(0, start // PITCH_HOP - DECODE_MARGIN_FRAMES)
+            last = min(frames, math.ceil(len(audio) / PITCH_HOP))
+            output = voice.net_g.infer(
+                feats, lengths, *net_args, sid, skip_head=first, return_length=last - first
+            )[0]
+        decoded = output.squeeze().float().cpu().numpy()
+        offset = round((start - first * PITCH_HOP) * voice.target_rate / INPUT_SAMPLE_RATE)
+        return decoded[offset:], audio[start:]
+
+    def _protect_consonants(
+        self, feats: torch.Tensor, live: torch.Tensor, pitchf: torch.Tensor
+    ) -> torch.Tensor:
+        """On unvoiced frames (consonants, breaths) use less of the index mix.
+
+        The index often has no good match for consonants, so mixing it in there blurs words.
+        """
+        protect = min(1.0, max(0.0, float(self.protect)))
+        if protect <= 0:
+            return feats
+        voiced = (pitchf > 0).unsqueeze(-1).to(feats.dtype)
+        keep = voiced + (1 - voiced) * (1 - protect)
+        return feats * keep + live * (1 - keep)
 
     def _pitch_tensors(self, audio: np.ndarray, frames: int) -> tuple[torch.Tensor, torch.Tensor]:
         assert self._pitch_extractor is not None
         f0 = np.asarray(self._pitch_extractor.extract(audio), dtype=np.float32)
+        f0 = _smooth_pitch(f0, int(self.pitch_smoothing_ms) // PITCH_FRAME_MS)
         f0 = f0 * 2.0 ** (self._semitones / 12)
         f0 = _fit_length(f0, frames)
         coarse = _coarse_pitch(f0)
@@ -302,6 +356,50 @@ def _load_index(index_path: Path | None) -> tuple[Any | None, np.ndarray | None]
         logger.warning("Could not use index %s, continuing without it", index_path, exc_info=True)
         return None, None
     return index, np.ascontiguousarray(vectors, dtype=np.float32)
+
+
+def _upsample_frames(feats: torch.Tensor) -> torch.Tensor:
+    """ContentVec gives one frame per 20 ms; the synthesizer wants one per 10 ms."""
+    doubled = F.interpolate(feats.permute(0, 2, 1), scale_factor=2, mode="nearest")
+    return doubled.permute(0, 2, 1)
+
+
+def _smooth_pitch(f0: np.ndarray, frames: int) -> np.ndarray:
+    """Median-filter the voiced pitch to remove single-frame jumps; unvoiced stays 0."""
+    if frames < 2:
+        return f0
+    voiced = f0 > 0
+    if voiced.sum() < 2:
+        return f0
+    window = frames if frames % 2 else frames + 1
+    positions = np.arange(len(f0))
+    filled = np.interp(positions, positions[voiced], np.log(f0[voiced]))
+    smoothed = np.exp(medfilt(filled, window))
+    return np.where(voiced, smoothed, 0.0).astype(np.float32)
+
+
+def _follow_loudness(source: np.ndarray, converted: np.ndarray, amount: float) -> np.ndarray:
+    """Scale the converted audio so its loudness follows the 16 kHz source by `amount` (0-1)."""
+    amount = min(1.0, max(0.0, float(amount)))
+    if amount <= 0 or len(converted) == 0 or len(source) == 0:
+        return converted
+    source_env = _loudness_envelope(source, len(converted))
+    out_env = _loudness_envelope(converted, len(converted), len(converted) / len(source))
+    gain = (source_env / np.maximum(out_env, LOUDNESS_FLOOR)) ** amount
+    return (converted * gain).astype(np.float32)
+
+
+def _loudness_envelope(audio: np.ndarray, length: int, scale: float = 1.0) -> np.ndarray:
+    frame = max(1, round(LOUDNESS_FRAME * scale))
+    hop = max(1, round(LOUDNESS_HOP * scale))
+    padded = np.pad(audio.astype(np.float64), (frame // 2, frame // 2))
+    starts = np.arange(0, max(1, len(padded) - frame + 1), hop)
+    power = np.cumsum(np.concatenate([[0.0], np.square(padded)]))
+    ends = np.minimum(starts + frame, len(padded))
+    rms = np.sqrt((power[ends] - power[starts]) / np.maximum(ends - starts, 1))
+    # A window starting at `starts` in the padded audio is centred on `starts` in the original.
+    centres = starts * (length / max(len(audio), 1))
+    return np.interp(np.arange(length), centres, rms).astype(np.float32)
 
 
 def _coarse_pitch(f0: np.ndarray) -> np.ndarray:

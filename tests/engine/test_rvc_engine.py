@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 import torch
 
+from voice_clone.engine import rvc_engine
 from voice_clone.engine.download import BaseModelPaths
 from voice_clone.engine.rvc_engine import RvcEngine
 from voice_clone.engine.vendor.models import SynthesizerTrnMs768NSFsid
@@ -100,3 +101,98 @@ def test_load_non_checkpoint_file_raises_model_load_error(tmp_path):
 
     with pytest.raises(ModelLoadError):
         _engine().load(VoiceProfile("bad", bad, None))
+
+
+def test_full_protect_keeps_live_features_on_unvoiced_frames(engine):
+    feats = torch.ones(1, 4, 3)
+    live = torch.zeros(1, 4, 3)
+    pitchf = torch.tensor([[200.0, 0.0, 180.0, 0.0]])
+    engine.protect = 1.0
+
+    out = engine._protect_consonants(feats, live, pitchf)
+
+    assert out[0, :, 0].tolist() == [1.0, 0.0, 1.0, 0.0]
+
+
+def test_partial_protect_mixes_unvoiced_frames(engine):
+    engine.protect = 0.25
+
+    out = engine._protect_consonants(
+        torch.ones(1, 2, 1), torch.zeros(1, 2, 1), torch.tensor([[0.0, 150.0]])
+    )
+
+    assert out[0, :, 0].tolist() == pytest.approx([0.75, 1.0])
+
+
+def test_zero_protect_leaves_features_unchanged(engine):
+    engine.protect = 0.0
+    feats = torch.ones(1, 2, 1)
+
+    out = engine._protect_consonants(feats, torch.zeros(1, 2, 1), torch.tensor([[0.0, 0.0]]))
+
+    assert torch.equal(out, feats)
+
+
+def test_pitch_smoothing_removes_single_frame_jump():
+    f0 = np.array([200, 200, 400, 200, 200, 0, 0], dtype=np.float32)
+
+    out = rvc_engine._smooth_pitch(f0, 3)
+
+    assert out[:5] == pytest.approx([200] * 5) and out[5:].tolist() == [0.0, 0.0]
+
+
+def test_pitch_smoothing_off_returns_same_values():
+    f0 = np.array([200, 400, 200], dtype=np.float32)
+
+    assert rvc_engine._smooth_pitch(f0, 0) is f0
+
+
+def test_follow_loudness_full_matches_source_level():
+    rng = np.random.default_rng(2)
+    source = (rng.standard_normal(16000) * 0.2).astype(np.float32)
+    converted = (rng.standard_normal(40000) * 0.02).astype(np.float32)
+
+    out = rvc_engine._follow_loudness(source, converted, 1.0)
+
+    rms = float(np.sqrt(np.mean(np.square(out[4000:-4000]))))
+    assert rms == pytest.approx(0.2, rel=0.15)
+
+
+def test_follow_loudness_zero_returns_output_unchanged():
+    converted = np.full(100, 0.3, dtype=np.float32)
+
+    assert rvc_engine._follow_loudness(np.ones(40, dtype=np.float32), converted, 0) is converted
+
+
+def test_follow_loudness_keeps_length_and_dtype(engine):
+    engine.loudness_follow = 0.5
+    engine.pitch_smoothing_ms = 30
+
+    out = engine.convert((np.random.default_rng(3).standard_normal(12000) * 0.1).astype(np.float32))
+
+    assert len(out) == 30000 and out.dtype == np.float32 and np.isfinite(out).all()
+
+
+@pytest.mark.parametrize("tail", [6400, 7680, 12000])
+def test_convert_tail_returns_only_the_end(engine, tail):
+    audio = (np.random.default_rng(4).standard_normal(16000) * 0.1).astype(np.float32)
+
+    out = engine.convert(audio, tail=tail)
+
+    assert len(out) == round(tail * TARGET_RATE / 16000)
+    assert out.dtype == np.float32 and np.isfinite(out).all()
+
+
+def test_convert_tail_decodes_only_the_last_frames(engine):
+    calls = []
+    infer = engine._voice.net_g.infer
+
+    def spy(*args, **kwargs):
+        calls.append(kwargs)
+        return infer(*args, **kwargs)
+
+    engine._voice.net_g.infer = spy
+    engine.convert(np.zeros(16000, dtype=np.float32), tail=6400)
+
+    assert calls[0]["skip_head"] == (16000 - 6400) // 160 - rvc_engine.DECODE_MARGIN_FRAMES
+    assert calls[0]["return_length"] == 100 - calls[0]["skip_head"]

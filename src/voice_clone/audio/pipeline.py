@@ -31,13 +31,15 @@ JOIN_SECONDS = 5.0
 # Removes mains hum (50/60 Hz) and rumble below the voice range, like the training data filter.
 HUM_FILTER_HZ = 90
 HUM_FILTER_ORDER = 8
+MIN_CONTEXT_MS = 200
+MAX_CONTEXT_MS = 2000
 
 
 class _Engine(Protocol):
     input_sample_rate: int
     output_sample_rate: int
 
-    def convert(self, audio: np.ndarray) -> np.ndarray: ...
+    def convert(self, audio: np.ndarray, tail: int | None = None) -> np.ndarray: ...
 
 
 class ConversionPipeline:
@@ -49,7 +51,7 @@ class ConversionPipeline:
         on_levels: LevelCallback | None = None,
         on_error: ErrorCallback | None = None,
         block_ms: int = 400,
-        context_ms: int = 700,
+        context_ms: int = 1000,
         crossfade_ms: int = 80,
         gate_settings: GateSettings | None = None,
     ) -> None:
@@ -66,7 +68,7 @@ class ConversionPipeline:
         self._input_frames = self._input_rate * block_ms // 1000
         self._output_frames = self._output_rate * block_ms // 1000
         self._hop = self._engine_in_rate * block_ms // 1000
-        self._context_samples = self._engine_in_rate * context_ms // 1000
+        self._context_samples = self._context_length(context_ms)
         self._crossfade_samples = self._engine_in_rate * crossfade_ms // 1000
         self._engine_ratio = self._engine_out_rate / self._engine_in_rate
 
@@ -83,6 +85,10 @@ class ConversionPipeline:
     @property
     def engine_input_length(self) -> int:
         return self._context_samples + self._hop
+
+    @property
+    def _engine_tail(self) -> int:
+        return self._hop + self._crossfade_samples
 
     @property
     def is_running(self) -> bool:
@@ -122,8 +128,22 @@ class ConversionPipeline:
         self._gate_settings = settings
         self._gate.configure(settings)
 
+    def set_context_ms(self, context_ms: int) -> None:
+        """Change how much earlier audio the model hears. The next hop uses the new length.
+
+        More context helps the model recognise sounds (clearer words) and adds no delay, but
+        each conversion takes longer. If it gets too slow, audio blocks are dropped.
+        """
+        self._context_samples = self._context_length(context_ms)
+
+    def _context_length(self, context_ms: int) -> int:
+        context_ms = max(MIN_CONTEXT_MS, min(MAX_CONTEXT_MS, int(context_ms)))
+        return self._engine_in_rate * context_ms // 1000
+
     def warm_up(self) -> None:
-        self._engine.convert(np.zeros(self.engine_input_length, dtype=np.float32))
+        self._engine.convert(
+            np.zeros(self.engine_input_length, dtype=np.float32), tail=self._engine_tail
+        )
 
     def process_block(self, block: np.ndarray) -> np.ndarray:
         block16 = self._input_resampler.resample_chunk(np.asarray(block, dtype=np.float32))
@@ -146,8 +166,9 @@ class ConversionPipeline:
 
     def _convert_hop(self, hop: np.ndarray) -> np.ndarray:
         hop = self._gate.process(hop)
-        engine_input = np.concatenate([self._history, hop])
-        self._history = engine_input[len(engine_input) - self._context_samples :]
+        context = self._context_samples  # read once: the UI thread may change it
+        engine_input = np.concatenate([_fit_history(self._history, context), hop])
+        self._history = engine_input[len(engine_input) - context :]
         body_len = round(self._hop * self._engine_ratio)
 
         silent = not hop.any()
@@ -158,7 +179,10 @@ class ConversionPipeline:
             return np.zeros(body_len, dtype=np.float32)
         self._last_hop_silent = silent
 
-        converted = np.asarray(self._engine.convert(engine_input), dtype=np.float32)
+        # Only the new hop plus the crossfade is played, so only that much is synthesized.
+        converted = np.asarray(
+            self._engine.convert(engine_input, tail=self._engine_tail), dtype=np.float32
+        )
         fade_len = len(self._tail)
         segment = _tail_or_pad(converted, body_len + fade_len)
 
@@ -274,6 +298,13 @@ class ConversionPipeline:
                 if self._on_error is not None:
                     self._on_error(exc)
                 return
+
+
+def _fit_history(history: np.ndarray, length: int) -> np.ndarray:
+    """Keep the newest `length` samples, padding older missing audio with silence."""
+    if len(history) >= length:
+        return history[len(history) - length :]
+    return np.concatenate([np.zeros(length - len(history), dtype=np.float32), history])
 
 
 def _tail_or_pad(audio: np.ndarray, length: int) -> np.ndarray:

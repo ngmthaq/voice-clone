@@ -104,6 +104,7 @@ def test_disabled_button_does_not_change_on_hover(empty_environment):
     async def body(app, pilot):
         button = app.screen.query_one("#start-button")
         button.disabled = True
+        button.scroll_visible(animate=False)
         await pilot.pause()
         before = (button.styles.background, button.styles.border_top)
         await pilot.hover("#start-button")
@@ -150,3 +151,110 @@ def test_index_percent_change_applies_to_running_engine(empty_environment):
         return engine.index_rate
 
     assert _run(body) == 0.8
+
+
+@pytest.mark.parametrize(
+    ("field_id", "name", "value"),
+    [
+        ("protect-percent", "protect_percent", 40),
+        ("loudness-percent", "loudness_percent", 60),
+        ("pitch-smoothing", "pitch_smoothing_ms", 30),
+        ("context-ms", "context_ms", 1200),
+    ],
+)
+def test_voice_match_value_is_saved(empty_environment, field_id, name, value):
+    async def body(app, pilot):
+        app.screen.query_one(f"#{field_id}").value = str(value)
+        await pilot.pause()
+
+    _run(body)
+
+    assert getattr(config.load_settings(), name) == value
+
+
+def test_voice_match_changes_apply_to_running_engine_and_pipeline(empty_environment):
+    class FakeEngine:
+        index_rate = 0.5
+
+    class FakePipeline:
+        context_ms = None
+
+        def set_context_ms(self, value):
+            self.context_ms = value
+
+    async def body(app, pilot):
+        engine, pipeline = FakeEngine(), FakePipeline()
+        app.screen._engine = engine
+        app.screen._pipeline = pipeline
+        app.screen.query_one("#protect-percent").value = "50"
+        app.screen.query_one("#loudness-percent").value = "100"
+        app.screen.query_one("#pitch-smoothing").value = "40"
+        app.screen.query_one("#context-ms").value = "1500"
+        await pilot.pause()
+        app.screen._pipeline = None
+        return (
+            engine.protect,
+            engine.loudness_follow,
+            engine.pitch_smoothing_ms,
+            pipeline.context_ms,
+        )
+
+    assert _run(body) == (0.5, 1.0, 40, 1500)
+
+
+def test_voice_reset_restores_advanced_defaults_and_keeps_index(empty_environment, tmp_path):
+    (tmp_path / "settings.toml").write_text(
+        "index_percent = 90\nprotect_percent = 10\ncontext_ms = 1500\n"
+    )
+
+    async def body(app, pilot):
+        app.screen.query_one("#tabs").active = "advanced-tab"
+        await pilot.pause()
+        await pilot.click("#voice-reset")
+        await pilot.pause()
+
+    _run(body)
+
+    saved = config.load_settings()
+    assert (saved.index_percent, saved.protect_percent, saved.context_ms) == (90, 67, 1000)
+
+
+def test_simple_tab_is_shown_first_with_devices_and_index(empty_environment):
+    async def body(app, pilot):
+        tabs = app.screen.query_one("#tabs")
+        pane = app.screen.query_one("#simple-tab")
+        return tabs.active, [
+            bool(pane.query(selector))
+            for selector in ("#input-select", "#pitch-row", "#index-percent")
+        ]
+
+    assert _run(body) == ("simple-tab", [True, True, True])
+
+
+def test_advanced_tab_holds_voice_match_and_gate(empty_environment):
+    async def body(app, pilot):
+        pane = app.screen.query_one("#advanced-tab")
+        return [
+            bool(pane.query(f"#{field_id}"))
+            for field_id in ("protect-percent", "context-ms", "gate-hold")
+        ]
+
+    assert _run(body) == [True, True, True]
+
+
+def test_all_settings_are_disabled_while_running(empty_environment):
+    async def body(app, pilot):
+        screen = app.screen
+        screen._converting = True
+        screen._refresh_controls()
+        await pilot.pause()
+        settings = list(screen.query("#tabs Select, #tabs Input, #tabs Button"))
+        locked = all(widget.disabled for widget in settings)
+        stop_enabled = not screen.query_one("#start-button").disabled
+        screen._converting = False
+        screen._refresh_controls()
+        await pilot.pause()
+        unlocked = not any(widget.disabled for widget in settings)
+        return len(settings) > 10, locked, stop_enabled, unlocked
+
+    assert _run(body) == (True, True, True, True)

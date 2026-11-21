@@ -12,9 +12,10 @@ class FakeEngine:
         self.value = value
         self.convert_lengths: list[int] = []
 
-    def convert(self, audio: np.ndarray) -> np.ndarray:
+    def convert(self, audio: np.ndarray, tail: int | None = None) -> np.ndarray:
         self.convert_lengths.append(len(audio))
-        length = round(len(audio) * self.output_sample_rate / self.input_sample_rate)
+        kept = len(audio) if tail is None else min(tail, len(audio))
+        length = round(kept * self.output_sample_rate / self.input_sample_rate)
         return np.full(length, self.value, dtype=np.float32)
 
 

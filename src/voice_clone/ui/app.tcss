@@ -3,32 +3,68 @@ MainScreen {
 }
 
 #panel {
-    width: 70;
+    width: 74;
     max-width: 100%;
+    height: 1fr;
+    padding: 1 2 0 2;
+    /* No scrollbar: the page still scrolls with the mouse wheel, trackpad or Tab key. */
+    scrollbar-size-vertical: 0;
+}
+
+/* Tabs are as tall as their content, so Start sits right below it.
+   When it does not fit, the whole page scrolls. */
+#tabs,
+#tabs ContentSwitcher,
+#tabs TabPane {
     height: auto;
-    padding: 1 2;
+}
+
+#tabs TabPane {
+    padding: 0 1;
+}
+
+#controls {
+    height: auto;
+    padding-bottom: 1;
+}
+
+/* Every setting: label, control, an optional hint, then two empty lines. */
+.field {
+    height: auto;
+    margin-bottom: 2;
 }
 
 .field-label {
-    margin-top: 1;
     color: $text-muted;
 }
 
-/* Pitch and the three gate settings: one row each, label on the left. */
-.setting-row {
-    height: 3;
-    margin-top: 1;
+.field Input,
+.field Select {
+    width: 100%;
 }
 
-.row-label {
-    width: 22;
-    height: 3;
-    content-align: left middle;
+.hint {
     color: $text-muted;
+    text-style: italic;
+}
+
+.section-title {
+    text-style: bold;
+    margin: 1 0;
+}
+
+#pitch-row {
+    height: 3;
 }
 
 #pitch-row Button {
     min-width: 5;
+}
+
+/* An Input's left border has the background colour, so its box starts one cell in.
+   Indent the pitch buttons the same so they line up with the inputs. */
+#pitch-down {
+    margin-left: 1;
 }
 
 #pitch-label {
@@ -37,17 +73,9 @@ MainScreen {
     content-align: center middle;
 }
 
-.gate-field {
-    margin-top: 0;
-}
-
-.setting-row Input {
-    width: 1fr;
-}
-
-.hint {
-    color: $text-muted;
-    text-style: italic;
+#voice-reset,
+#gate-reset {
+    width: 100%;
 }
 
 #start-button {
@@ -81,10 +109,6 @@ LevelMeterWidget {
     color: $success;
 }
 
-#gate-reset {
-    margin-top: 1;
-    width: 100%;
-}
 
 /* Disabled controls must look inactive: no hover highlight, no clickable pointer. */
 Button.-style-default:disabled:hover {
