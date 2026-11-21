@@ -5,6 +5,7 @@ from textual.screen import Screen
 from textual.widgets import Button, Footer, Header, Static
 
 from voice_clone.ui.main_screen import MainScreen
+from voice_clone.ui.setup_screen import SetupScreen
 from voice_clone.ui.train_screen import TrainScreen
 
 
@@ -25,6 +26,11 @@ class HomeScreen(Screen[None]):
                 "Make a new voice from recordings of your own voice.",
                 classes="hint home-hint",
             )
+            yield Button("Check setup", id="open-setup")
+            yield Static(
+                "See if everything the app needs is installed, and download the base models.",
+                classes="hint home-hint",
+            )
         yield Footer()
 
     def on_mount(self) -> None:
@@ -37,3 +43,7 @@ class HomeScreen(Screen[None]):
     @on(Button.Pressed, "#open-train")
     def _open_train(self) -> None:
         self.app.push_screen(TrainScreen())
+
+    @on(Button.Pressed, "#open-setup")
+    def _open_setup(self) -> None:
+        self.app.push_screen(SetupScreen())

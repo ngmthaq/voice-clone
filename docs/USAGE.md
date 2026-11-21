@@ -6,7 +6,7 @@ Install the app first ([INSTALL.md](INSTALL.md)). Then start it:
 python -m voice_clone run
 ```
 
-The app opens on a start screen with two choices: **Voice changer** and **Train a voice**. Press `esc` to come back to it.
+The app opens on a start screen with three choices: **Voice changer**, **Train a voice** and **Check setup**. Press `esc` to come back to it.
 
 ## Change your voice
 

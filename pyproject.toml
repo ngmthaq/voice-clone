@@ -2,7 +2,7 @@
 name = "voice-clone"
 version = "0.1.0"
 description = "Real-time voice cloning TUI"
-requires-python = ">=3.10,<3.13"
+requires-python = ">=3.12,<3.13"
 dependencies = [
     "textual",
     "numpy",
@@ -40,7 +40,7 @@ packages = ["src/voice_clone"]
 
 [tool.ruff]
 line-length = 100
-target-version = "py310"
+target-version = "py312"
 src = ["src", "tests"]
 extend-exclude = ["src/voice_clone/engine/vendor", "training"]
 

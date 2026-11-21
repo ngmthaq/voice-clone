@@ -6,27 +6,28 @@ How to set up voice-clone on macOS or Windows. When you are done, go to [USAGE.m
 
 To use the voice changer:
 
-- Python 3.10, 3.11 or 3.12
+- **Python 3.12**, for the app and for training: from https://www.python.org/downloads/, or `brew install python@3.12` on macOS. Check it with `python3.12 --version` (macOS) or `py -3.12 --version` (Windows).
 - A virtual audio device:
   - macOS: BlackHole 2ch. Install with `brew install blackhole-2ch`.
   - Windows: VB-Audio Virtual Cable (VB-CABLE), from https://vb-audio.com/Cable/
 - Windows: an NVIDIA graphics card makes conversion much faster. Without one, the app uses the CPU and may be slow.
 - Headphones, so the converted voice does not feed back into your microphone.
 
-To train your own voice, also (details in [TRAINING.md](TRAINING.md#before-you-start)):
+To train your own voice, also install (details in [TRAINING.md](TRAINING.md#before-you-start)):
 
 - `ffmpeg`: `brew install ffmpeg` (macOS) or `winget install ffmpeg` (Windows)
 - `git`: `xcode-select --install` (macOS) or `winget install Git.Git` (Windows)
-- **Python 3.12** (Applio needs it, even if the app runs on 3.10): from https://www.python.org/downloads/, or `brew install python@3.12` on macOS
 
 ## Install the app
 
-Create a virtual environment and install the app (once). Pick the block for your computer.
+Create a virtual environment with Python 3.12 and install the app (once). Pick the block for your computer.
+
+If you already have a `.venv` folder made with another Python version, delete the folder first, then run the block again.
 
 ### macOS (Apple Silicon or Intel)
 
 ```bash
-python3.10 -m venv .venv
+python3.12 -m venv .venv
 source .venv/bin/activate
 pip install -e .
 ```
@@ -47,7 +48,7 @@ nvidia-smi
 ### Windows with an NVIDIA card (PowerShell)
 
 ```powershell
-py -3.10 -m venv .venv
+py -3.12 -m venv .venv
 .venv\Scripts\Activate.ps1
 pip install torch==2.5.1 torchaudio==2.5.1 --index-url https://download.pytorch.org/whl/cu124
 pip install -e .
@@ -66,7 +67,7 @@ It must print `True`. If it prints `False`, update the NVIDIA driver and check a
 ### Windows without an NVIDIA card (PowerShell)
 
 ```powershell
-py -3.10 -m venv .venv
+py -3.12 -m venv .venv
 .venv\Scripts\Activate.ps1
 pip install -e .
 ```
@@ -85,10 +86,25 @@ pip install --force-reinstall torch==2.5.1 torchaudio==2.5.1 --index-url https:/
 python -m voice_clone run
 ```
 
-The app opens on a start screen with two choices: **Voice changer** and **Train a voice**. Press `esc` to come back to it.
+The app opens on a start screen with three choices: **Voice changer**, **Train a voice** and **Check setup**. Press `esc` to come back to it.
 
 In a new terminal, activate the environment again first (`source .venv/bin/activate`, or `.venv\Scripts\Activate.ps1` on Windows). After `pip install -e .`, the short command `voice-clone` works too.
 
-The first time you open the voice changer, the app downloads about 550 MB of base models into `models/`. A progress bar shows the download. If it fails, check your connection and press "Retry download".
+## Check the setup
+
+Choose **Check setup** on the start screen. It checks everything the app needs and says how to fix what is missing:
+
+| Group | What it checks |
+| --- | --- |
+| Voice changer | Python version, base models, microphone, virtual audio device (BlackHole or VB-CABLE), GPU, voices |
+| Training | `ffmpeg`, `git`, Python 3.12, and whether Applio is installed yet |
+
+Each line shows ✓ (ready), ✗ (missing, with how to fix it), ! (works, but could be better) or i (for your information). If the base models are missing, press **Download base models** (about 560 MB, into `models/`). After you install something, press **Check again**.
+
+To get training ready ahead of time, press **Install Applio**. It downloads Applio, creates its Python 3.12 environment, installs its packages and downloads its pretrained models (several GB in all). The page shows each step and Applio's output; **Stop install** stops it, and pressing **Install Applio** again starts over. The button appears only when `git` and Python 3.12 are installed. If you skip this, the first training run installs Applio by itself.
+
+The voice changer also downloads the base models by itself the first time you open it, if they are missing. If a download fails, check your connection and press "Retry download".
+
+If the GPU line says an NVIDIA card is installed but PyTorch cannot use it, install the CUDA build as shown in [Windows with an NVIDIA card](#windows-with-an-nvidia-card-powershell).
 
 Next: [USAGE.md](USAGE.md) to change your voice, or [TRAINING.md](TRAINING.md) to make your own voice.

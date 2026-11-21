@@ -22,7 +22,7 @@ class FakeApplio:
     def model_dir(self, name: str) -> Path:
         return self.logs_dir / name
 
-    def ensure_installed(self) -> None:
+    def ensure_installed(self, report=None) -> None:
         self.steps.append("install")
 
     def preprocess(self, name: str, *_: object) -> None:

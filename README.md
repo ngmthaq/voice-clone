@@ -6,9 +6,9 @@ It runs in the terminal (a Textual TUI).
 
 ## Quick start
 
-1. **Install** the prerequisites (Python, and BlackHole on macOS or VB-CABLE on Windows) and the app: follow [docs/INSTALL.md](docs/INSTALL.md) for your computer.
+1. **Install** the prerequisites (Python 3.12, and BlackHole on macOS or VB-CABLE on Windows) and the app: follow [docs/INSTALL.md](docs/INSTALL.md) for your computer.
 
-2. **Run** the app and pick **Voice changer** or **Train a voice**:
+2. **Run** the app. Choose **Check setup** first to see if anything is missing and to download the base models:
 
    ```bash
    python -m voice_clone run
@@ -22,7 +22,7 @@ It runs in the terminal (a Textual TUI).
 
 | Guide | What is in it |
 | --- | --- |
-| [INSTALL.md](docs/INSTALL.md) | Prerequisites, install on macOS and Windows (with or without an NVIDIA card), first start |
+| [INSTALL.md](docs/INSTALL.md) | Prerequisites, install on macOS and Windows (with or without an NVIDIA card), first start, Check setup |
 | [USAGE.md](docs/USAGE.md) | Change your voice, keys, settings that make the voice match better, logs |
 | [TRAINING.md](docs/TRAINING.md) | Record and train your own voice, in the app or with a command; options and troubleshooting |
 | [READING_SCRIPT.md](docs/READING_SCRIPT.md) | A text to read aloud while you record (about 12–15 minutes) |

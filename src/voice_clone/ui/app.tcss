@@ -1,5 +1,6 @@
 MainScreen,
-TrainScreen {
+TrainScreen,
+SetupScreen {
     align: center top;
 }
 
@@ -36,13 +37,90 @@ HomeScreen {
     text-style: bold;
 }
 
+/* Check setup screen */
+#checks {
+    height: auto;
+    padding: 0 1;
+}
+
+/* Group heading sits right above its rows; the first one right below the intro. */
+#checks > .section-title {
+    margin: 1 0 0 0;
+}
+
+#checks > .section-title:first-child {
+    margin-top: 0;
+}
+
+.check-row {
+    height: auto;
+    margin-bottom: 1;
+}
+
+.check-row.ok .check-line {
+    color: $success;
+}
+
+.check-row.warning .check-line {
+    color: $warning;
+}
+
+.check-row.missing .check-line {
+    color: $error;
+}
+
+.check-fix {
+    padding-left: 2;
+}
+
+#download-models,
+#install-applio,
+#check-again {
+    width: 100%;
+    margin-top: 1;
+}
+
+#models-progress {
+    margin-top: 1;
+}
+
+#setup-status {
+    height: auto;
+    margin: 1 0;
+}
+
+#setup-status.error {
+    color: $error;
+}
+
+#setup-status.warning {
+    color: $warning;
+}
+
+#setup-status.running {
+    color: $success;
+}
+
+#applio-log {
+    height: 16;
+    border: round $panel;
+}
+
+/* The scroll area fills the terminal, so the mouse wheel and trackpad scroll from
+   anywhere. The content stays in a centred column. */
 #panel {
-    width: 74;
-    max-width: 100%;
+    width: 100%;
     height: 1fr;
     padding: 1 2 0 2;
+    align-horizontal: center;
     /* No scrollbar: the page still scrolls with the mouse wheel, trackpad or Tab key. */
     scrollbar-size-vertical: 0;
+}
+
+#panel > .page {
+    width: 74;
+    max-width: 100%;
+    height: auto;
 }
 
 /* Tabs are as tall as their content, so Start sits right below it.

@@ -65,7 +65,7 @@ def train_voice(
         report("  Note: less than 10 minutes of audio. The voice will sound better with more.")
 
     report("Step 2/4: Setting up Applio (only slow the first time)…")
-    applio.ensure_installed()
+    applio.ensure_installed(report=lambda message: report(f"  {message}"))
 
     model_dir = applio.model_dir(options.name)
     if options.restart and model_dir.exists():

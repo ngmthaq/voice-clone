@@ -4,7 +4,7 @@
 
 - **Project Name**: `voice-clone`
 - **Project Description**: `A Python TUI app that takes live voice from a real microphone, changes it to a selected voice profile with a local AI model (RVC), and sends it to a virtual audio device in real time, so other apps (Zoom, Discord, OBS, …) can use it as a microphone.`
-- **Programming Languages**: `Python 3.10+`
+- **Programming Languages**: `Python 3.12` (the app and Applio training use the same version)
 - **Frameworks**: `Textual (TUI), PyTorch (model inference)`
 - **Package Managers**: `pip` + `venv`
 - **Key Libraries**: `textual, torch, sounddevice, numpy, librosa / torchaudio (resampling), faiss-cpu (RVC index), pydantic (settings), pytest`

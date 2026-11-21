@@ -162,3 +162,24 @@ def test_find_python_missing_explains_how_to_install(monkeypatch: pytest.MonkeyP
 
     with pytest.raises(TrainingError, match="Python 3.12 was not found"):
         commands_module.find_python("3.12", "darwin")
+
+
+def test_install_reports_each_step(tmp_path: Path) -> None:
+    applio, _ = _make(tmp_path)
+    messages: list[str] = []
+
+    applio.ensure_installed(report=messages.append)
+
+    steps = [m for m in messages if m.startswith("Step ")]
+    assert [m.split(":")[0] for m in steps] == ["Step 1/4", "Step 2/4", "Step 3/4", "Step 4/4"]
+    assert messages[-1] == "Applio 3.7.1 is installed."
+
+
+def test_installed_applio_reports_nothing(tmp_path: Path) -> None:
+    applio, runner = _make(tmp_path)
+    applio.ensure_installed()
+    messages: list[str] = []
+
+    applio.ensure_installed(report=messages.append)
+
+    assert messages == []

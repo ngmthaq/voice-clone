@@ -17,6 +17,7 @@ APPLIO_COMMIT = "6f69726b140c615c8cc6831a7db8b7c5e48ba8af"
 APPLIO_PYTHON = "3.12"
 WINDOWS_TORCH_INDEX = "https://download.pytorch.org/whl/cu128"
 READY_MARKER = ".voice-clone-ready"
+INSTALL_STEPS = 4
 # "0" lets Applio pick CUDA, then Apple MPS, then CPU. "-" forces CPU.
 GPU_ID = "0"
 CPU_ID = "-"
@@ -65,7 +66,8 @@ class Applio:
     def model_dir(self, name: str) -> Path:
         return self.logs_dir / name
 
-    def ensure_installed(self) -> None:
+    def ensure_installed(self, report: Callable[[str], None] = logger.info) -> None:
+        """Install Applio if needed. report gets one message per step, for showing progress."""
         if self.is_installed:
             return
         git = require_tool("git")
@@ -74,6 +76,7 @@ class Applio:
             shutil.rmtree(self.source_dir)
         self.root.mkdir(parents=True, exist_ok=True)
 
+        report(f"Step 1/{INSTALL_STEPS}: Downloading Applio {APPLIO_VERSION}…")
         self._runner(
             [
                 git,
@@ -93,8 +96,13 @@ class Applio:
                 "The release may have changed; stopping for safety."
             )
 
+        report(f"Step 2/{INSTALL_STEPS}: Creating Applio's Python {APPLIO_PYTHON} environment…")
         self._runner([*base_python, "-m", "venv", ".venv"], cwd=self.source_dir)
         pip = [str(self.python), "-m", "pip", "install"]
+        report(
+            f"Step 3/{INSTALL_STEPS}: Installing Applio's Python packages, with PyTorch "
+            "(a few GB, can take a while)…"
+        )
         self._runner([*pip, "--upgrade", "pip"], cwd=self.source_dir)
         install = [*pip, "-r", "requirements-engine.txt"]
         if self._platform == "win32":
@@ -102,10 +110,12 @@ class Applio:
             install += ["--extra-index-url", WINDOWS_TORCH_INDEX]
         self._runner(install, cwd=self.source_dir)
 
+        report(f"Step 4/{INSTALL_STEPS}: Downloading Applio's pretrained models (a few GB)…")
         prerequisites = ["prerequisites", "--pretraineds-hifigan", "--models"]
         prerequisites.append("--exe" if self._platform == "win32" else "--no-exe")
         self._core(prerequisites)
         (self.source_dir / READY_MARKER).write_text(APPLIO_COMMIT)
+        report(f"Applio {APPLIO_VERSION} is installed.")
 
     def preprocess(self, name: str, dataset_dir: Path, sample_rate: int, cpu_cores: int) -> None:
         self._core(

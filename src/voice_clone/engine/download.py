@@ -18,6 +18,9 @@ RMVPE_REPO = "lj1995/VoiceConversionWebUI"
 RMVPE_FILE = "rmvpe.pt"
 CONTENTVEC_DIRNAME = "content-vec-best"
 RMVPE_DIRNAME = "rmvpe"
+# Rough download sizes, shown before the download starts.
+CONTENTVEC_APPROX_MB = {"config.json": 1, "pytorch_model.bin": 378}
+RMVPE_APPROX_MB = 181
 
 ProgressCallback = Callable[[str, float], None]
 
@@ -35,10 +38,42 @@ def base_model_paths(models_dir: Path) -> BaseModelPaths:
     )
 
 
-def base_models_present(models_dir: Path) -> bool:
+@dataclass(frozen=True)
+class BaseModelFile:
+    """One file the voice changer needs, for showing what is downloaded."""
+
+    name: str
+    purpose: str
+    path: Path
+    approx_mb: int
+
+    @property
+    def present(self) -> bool:
+        return self.path.is_file()
+
+
+def base_model_files(models_dir: Path) -> list[BaseModelFile]:
     paths = base_model_paths(models_dir)
-    contentvec_ok = all((paths.contentvec_dir / name).is_file() for name in CONTENTVEC_FILES)
-    return contentvec_ok and paths.rmvpe_path.is_file()
+    return [
+        BaseModelFile(
+            f"{CONTENTVEC_DIRNAME}/{name}",
+            "ContentVec: reads the words and sounds of your voice",
+            paths.contentvec_dir / name,
+            CONTENTVEC_APPROX_MB[name],
+        )
+        for name in CONTENTVEC_FILES
+    ] + [
+        BaseModelFile(
+            f"{RMVPE_DIRNAME}/{RMVPE_FILE}",
+            "RMVPE: finds the pitch of your voice",
+            paths.rmvpe_path,
+            RMVPE_APPROX_MB,
+        )
+    ]
+
+
+def base_models_present(models_dir: Path) -> bool:
+    return all(file.present for file in base_model_files(models_dir))
 
 
 def ensure_base_models(

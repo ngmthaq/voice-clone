@@ -1,6 +1,6 @@
 from textual.app import ComposeResult
 from textual.binding import Binding
-from textual.containers import VerticalScroll
+from textual.containers import Vertical, VerticalScroll
 from textual.screen import Screen
 from textual.widgets import Footer, Header, Static
 
@@ -18,8 +18,11 @@ class TrainScreen(Screen[None]):
     def compose(self) -> ComposeResult:
         yield Header()
         with VerticalScroll(id="panel"):
-            yield Static("Make a new voice from 10–30 minutes of your recordings.", classes="intro")
-            yield TrainPanelWidget(id="train-panel")
+            with Vertical(classes="page"):
+                yield Static(
+                    "Make a new voice from 10–30 minutes of your recordings.", classes="intro"
+                )
+                yield TrainPanelWidget(id="train-panel")
         yield Footer()
 
     def action_back(self) -> None:

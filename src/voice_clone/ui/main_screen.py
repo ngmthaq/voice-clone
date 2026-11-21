@@ -168,59 +168,60 @@ class MainScreen(Screen[None]):
     def compose(self) -> ComposeResult:
         yield Header()
         with VerticalScroll(id="panel"):
-            with TabbedContent(id="tabs"):
-                with TabPane("Simple", id="simple-tab"):
-                    yield from labeled_field(
-                        "Input microphone",
-                        Select[str]([], id="input-select", prompt="Select a microphone"),
-                    )
-                    yield from labeled_field(
-                        "Output device",
-                        Select[str]([], id="output-select", prompt="Select an output device"),
-                    )
-                    yield from labeled_field(
-                        "Voice",
-                        Select[str]([], id="voice-select", prompt="Select a voice"),
-                    )
-                    yield from labeled_field(
-                        "Pitch (semitones)",
-                        Horizontal(
-                            Button("-", id="pitch-down"),
-                            Label("", id="pitch-label"),
-                            Button("+", id="pitch-up"),
-                            id="pitch-row",
-                        ),
-                    )
-                    yield from self._voice_field(INDEX_FIELD)
-                with TabPane("Advanced", id="advanced-tab"):
-                    yield Label("Voice match", classes="section-title")
-                    for field in ADVANCED_VOICE_FIELDS:
-                        yield from self._voice_field(field)
-                    yield Button("Reset voice match to defaults", id="voice-reset")
-                    yield Label(
-                        "Noise gate: silences the mic between words", classes="section-title"
-                    )
-                    for field_id, label, name, minimum, maximum, kind, hint in GATE_FIELDS:
-                        default = _format_number(getattr(DEFAULT_GATE, name))
+            with Vertical(classes="page"):
+                with TabbedContent(id="tabs"):
+                    with TabPane("Simple", id="simple-tab"):
                         yield from labeled_field(
-                            label,
-                            Input(
-                                _format_number(getattr(self._gate, name)),
-                                placeholder=f"default {default}",
-                                type=kind,
-                                validators=[Number(minimum=minimum, maximum=maximum)],
-                                id=field_id,
-                            ),
-                            hint,
-                            "gate-field",
+                            "Input microphone",
+                            Select[str]([], id="input-select", prompt="Select a microphone"),
                         )
-                    yield Button("Reset gate to defaults", id="gate-reset")
-            with Vertical(id="controls"):
-                yield Button("Start", id="start-button", variant="primary")
-                yield LevelMeterWidget("Input", id="input-meter")
-                yield LevelMeterWidget("Output", id="output-meter")
-                yield ProgressBar(total=1.0, show_eta=False, id="download-progress")
-                yield Static("", id="status")
+                        yield from labeled_field(
+                            "Output device",
+                            Select[str]([], id="output-select", prompt="Select an output device"),
+                        )
+                        yield from labeled_field(
+                            "Voice",
+                            Select[str]([], id="voice-select", prompt="Select a voice"),
+                        )
+                        yield from labeled_field(
+                            "Pitch (semitones)",
+                            Horizontal(
+                                Button("-", id="pitch-down"),
+                                Label("", id="pitch-label"),
+                                Button("+", id="pitch-up"),
+                                id="pitch-row",
+                            ),
+                        )
+                        yield from self._voice_field(INDEX_FIELD)
+                    with TabPane("Advanced", id="advanced-tab"):
+                        yield Label("Voice match", classes="section-title")
+                        for field in ADVANCED_VOICE_FIELDS:
+                            yield from self._voice_field(field)
+                        yield Button("Reset voice match to defaults", id="voice-reset")
+                        yield Label(
+                            "Noise gate: silences the mic between words", classes="section-title"
+                        )
+                        for field_id, label, name, minimum, maximum, kind, hint in GATE_FIELDS:
+                            default = _format_number(getattr(DEFAULT_GATE, name))
+                            yield from labeled_field(
+                                label,
+                                Input(
+                                    _format_number(getattr(self._gate, name)),
+                                    placeholder=f"default {default}",
+                                    type=kind,
+                                    validators=[Number(minimum=minimum, maximum=maximum)],
+                                    id=field_id,
+                                ),
+                                hint,
+                                "gate-field",
+                            )
+                        yield Button("Reset gate to defaults", id="gate-reset")
+                with Vertical(id="controls"):
+                    yield Button("Start", id="start-button", variant="primary")
+                    yield LevelMeterWidget("Input", id="input-meter")
+                    yield LevelMeterWidget("Output", id="output-meter")
+                    yield ProgressBar(total=1.0, show_eta=False, id="download-progress")
+                    yield Static("", id="status")
         yield Footer()
 
     def _voice_field(self, field: tuple[str, str, str, int, int, str]) -> ComposeResult:

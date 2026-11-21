@@ -18,10 +18,10 @@ You need:
 
 The first training run also:
 
-- installs Applio in `training/.applio/`, in its own Python 3.12 virtual environment,
+- installs Applio in `training/.applio/`, in its own Python 3.12 virtual environment (separate from the app's `.venv`),
 - downloads Applio's pretrained models (several GB).
 
-Later runs skip this setup.
+Later runs skip this setup. To do it ahead of time, press **Install Applio** on the **Check setup** screen (see [INSTALL.md](INSTALL.md#check-the-setup)).
 
 The app itself must already be installed (see [INSTALL.md](INSTALL.md)), and its virtual environment must be active (`source .venv/bin/activate`, or `.venv\Scripts\Activate.ps1` on Windows).
 
