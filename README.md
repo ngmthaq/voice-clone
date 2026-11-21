@@ -34,4 +34,4 @@ Only use voices you have the right to use. Do not use this tool to pretend to be
 
 ## Licenses
 
-See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+See [docs/THIRD_PARTY_NOTICES.md](docs/THIRD_PARTY_NOTICES.md).
