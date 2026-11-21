@@ -7,6 +7,7 @@ from voice_clone.training import trainer as trainer_module
 from voice_clone.training.dataset import DatasetInfo
 from voice_clone.training.trainer import (
     TrainOptions,
+    epochs_done,
     find_latest_weights,
     import_trained_model,
     train_voice,
@@ -139,3 +140,34 @@ def test_import_works_without_index(tmp_path: Path) -> None:
 
     assert target.name == "me.pth"
     assert [p.name for p in target.parent.iterdir()] == ["me.pth"]
+
+
+@pytest.mark.parametrize(
+    ("line", "expected"),
+    [
+        ("me | epoch=5 | step=120 | time=10:00:00 | training_speed=0:00:35", 5.0),
+        ("me | epoch=5 | step=110 | batch=6/24", 4.25),
+        ("me | epoch=1 | step=0 | batch=0/0", 0.0),
+        ("Starting training...", None),
+        ("Lowest generator loss: 20.1 at epoch 4, step 100", None),
+    ],
+)
+def test_epochs_done_reads_applio_progress(line: str, expected: float | None) -> None:
+    assert epochs_done(line) == expected
+
+
+def test_pause_hint_is_shown_in_the_training_step(tmp_path: Path) -> None:
+    messages: list[str] = []
+    options = TrainOptions(name="me", inputs=[tmp_path / "rec.m4a"])
+
+    train_voice(
+        options,
+        FakeApplio(tmp_path),
+        tmp_path / "training",
+        tmp_path / "voices",
+        report=messages.append,
+        prepare=_fake_prepare,
+        pause_hint="Press Stop.",
+    )
+
+    assert any(m.startswith("Step 4/4") and m.endswith("Press Stop.") for m in messages)

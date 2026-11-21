@@ -1,0 +1,31 @@
+from textual.app import ComposeResult
+from textual.binding import Binding
+from textual.containers import VerticalScroll
+from textual.screen import Screen
+from textual.widgets import Footer, Header, Static
+
+from voice_clone.ui.train_panel_widget import TrainPanelWidget
+
+BACK_WHILE_TRAINING_MESSAGE = "Stop training first, then go back."
+
+
+class TrainScreen(Screen[None]):
+    """Train a new voice from recordings."""
+
+    SUB_TITLE = "Train a voice"
+    BINDINGS = [Binding("escape", "back", "Back")]
+
+    def compose(self) -> ComposeResult:
+        yield Header()
+        with VerticalScroll(id="panel"):
+            yield Static("Make a new voice from 10–30 minutes of your recordings.", classes="intro")
+            yield TrainPanelWidget(id="train-panel")
+        yield Footer()
+
+    def action_back(self) -> None:
+        panel = self.query_one("#train-panel", TrainPanelWidget)
+        if panel.running:
+            # Leaving would stop training; make that the user's explicit choice.
+            self.notify(BACK_WHILE_TRAINING_MESSAGE, severity="warning")
+            return
+        self.dismiss()

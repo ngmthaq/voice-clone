@@ -41,9 +41,11 @@ Then run the app:
 python -m voice_clone run
 ```
 
+The app opens on a start screen with two choices: **Voice changer** and **Train a voice**. Press `esc` to come back to it.
+
 In a new terminal, activate the environment again first (`source .venv/bin/activate`, or `.venv\Scripts\Activate.ps1` on Windows). After `pip install -e .`, the short command `voice-clone` works too.
 
-On the first start the app downloads about 550 MB of base models into `models/`. A progress bar shows the download. If it fails, check your connection and press "Retry download".
+The first time you open the voice changer, the app downloads about 550 MB of base models into `models/`. A progress bar shows the download. If it fails, check your connection and press "Retry download".
 
 ## Add a voice
 
@@ -101,13 +103,17 @@ The `Accept: application/octet-stream` header makes GitHub send the file itself 
 
 Full step-by-step guide: [docs/TRAINING.md](docs/TRAINING.md).
 
-Record 10–30 minutes of your own voice (for example with iPhone Voice Memos set to **Lossless**), copy the file(s) to this computer, then run:
+Record 10–30 minutes of your own voice (for example with iPhone Voice Memos set to **Lossless**) and copy the file(s) to this computer.
+
+To train in the app, choose **Train a voice** on the start screen, add the recordings, pick a voice name and press **Start training**. The screen shows the progress and Applio's output. When training ends, the new voice is in the **Voice** list of the voice changer.
+
+Or run:
 
 ```bash
 python -m voice_clone train path/to/recording.m4a --name my-voice
 ```
 
-The command:
+Training (in the app or with the command):
 
 1. Cleans the recordings (mono, 48 kHz, removes low hum, evens out loudness) into `training/<name>/dataset/`.
 2. The first time only: installs [Applio](https://github.com/IAHispano/Applio) 3.7.1 in `training/.applio/` in its own Python 3.12 virtual environment, and downloads its pretrained models (several GB).
@@ -126,11 +132,11 @@ Useful options:
 | `--restart` | off | Throw away an earlier run with the same name |
 | `--force` | off | Replace an existing voice in `voices/<name>/` |
 
-Press **Ctrl+C** to pause. Run the same command again to continue from the last checkpoint (saved every 10 epochs by default).
+Press **Ctrl+C** (or **Stop training** in the app) to pause. Start again with the same name to continue from the last checkpoint (saved every 10 epochs by default).
 
 ## Use it
 
-1. On the **Simple** tab, pick your microphone, the output device (BlackHole 2ch or CABLE Input), and a voice.
+1. Choose **Voice changer** on the start screen. On the **Simple** tab, pick your microphone, the output device (BlackHole 2ch or CABLE Input), and a voice.
 2. Set the pitch with `-` and `+` (in semitones, -12 to +12).
 3. Press Start (or the space bar). Loading the voice can take about 30 seconds the first time.
 4. In Zoom, Discord or any other app, choose "BlackHole 2ch" (macOS) or "CABLE Output" (Windows) as the microphone.
@@ -139,7 +145,7 @@ Use headphones, so the converted voice does not feed back into your microphone.
 
 While the voice is running, all settings are locked. Press Stop to change them, then Start again.
 
-Keys: `space` start or stop, `q` quit. Your choices are saved and restored on the next start.
+Keys: `space` start or stop, `esc` back to the start screen (this stops the voice), `q` quit. Your choices are saved and restored on the next start.
 
 ### Make the voice match better
 

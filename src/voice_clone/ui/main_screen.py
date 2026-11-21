@@ -4,10 +4,10 @@ from dataclasses import replace
 
 from textual import on, work
 from textual.app import ComposeResult
+from textual.binding import Binding
 from textual.containers import Horizontal, Vertical, VerticalScroll
 from textual.screen import Screen
 from textual.validation import Number
-from textual.widget import Widget
 from textual.widgets import (
     Button,
     Footer,
@@ -36,6 +36,7 @@ from voice_clone.engine.download import base_model_paths
 from voice_clone.errors import VoiceCloneError
 from voice_clone.paths import models_dir, voices_dir
 from voice_clone.profiles import VoiceProfile, discover_profiles
+from voice_clone.ui.fields import labeled_field
 from voice_clone.ui.level_meter_widget import LevelMeterWidget
 
 logger = logging.getLogger(__name__)
@@ -46,7 +47,10 @@ METER_REFRESH_SECONDS = 0.1
 NO_VIRTUAL_DEVICE_MESSAGE = (
     "No virtual audio device found. Install BlackHole 2ch (macOS) or VB-CABLE (Windows)."
 )
-NO_VOICES_MESSAGE = "No voices found. Put a voice in voices/<name>/model.pth"
+NO_VOICES_MESSAGE = (
+    "No voices found. Go back (Esc) and choose 'Train a voice', "
+    "or put a voice in voices/<name>/model.pth"
+)
 DEFAULT_GATE = GateSettings()
 DEFAULT_SETTINGS = Settings()
 DEFAULT_INDEX_PERCENT = DEFAULT_SETTINGS.index_percent
@@ -127,6 +131,14 @@ GATE_FIELDS = (
 
 
 class MainScreen(Screen[None]):
+    """The voice changer: pick devices and a voice, then convert the microphone live."""
+
+    SUB_TITLE = "Voice changer"
+    BINDINGS = [
+        Binding("escape", "back", "Back"),
+        Binding("space", "toggle", "Start/Stop"),
+    ]
+
     def __init__(self) -> None:
         super().__init__()
         self._settings = load_settings()
@@ -158,19 +170,19 @@ class MainScreen(Screen[None]):
         with VerticalScroll(id="panel"):
             with TabbedContent(id="tabs"):
                 with TabPane("Simple", id="simple-tab"):
-                    yield from _field(
+                    yield from labeled_field(
                         "Input microphone",
                         Select[str]([], id="input-select", prompt="Select a microphone"),
                     )
-                    yield from _field(
+                    yield from labeled_field(
                         "Output device",
                         Select[str]([], id="output-select", prompt="Select an output device"),
                     )
-                    yield from _field(
+                    yield from labeled_field(
                         "Voice",
                         Select[str]([], id="voice-select", prompt="Select a voice"),
                     )
-                    yield from _field(
+                    yield from labeled_field(
                         "Pitch (semitones)",
                         Horizontal(
                             Button("-", id="pitch-down"),
@@ -190,7 +202,7 @@ class MainScreen(Screen[None]):
                     )
                     for field_id, label, name, minimum, maximum, kind, hint in GATE_FIELDS:
                         default = _format_number(getattr(DEFAULT_GATE, name))
-                        yield from _field(
+                        yield from labeled_field(
                             label,
                             Input(
                                 _format_number(getattr(self._gate, name)),
@@ -213,7 +225,7 @@ class MainScreen(Screen[None]):
 
     def _voice_field(self, field: tuple[str, str, str, int, int, str]) -> ComposeResult:
         field_id, label, name, minimum, maximum, hint = field
-        yield from _field(
+        yield from labeled_field(
             label,
             Input(
                 str(self._voice_options[name]),
@@ -251,6 +263,15 @@ class MainScreen(Screen[None]):
             self._refresh_controls()
         else:
             self._begin_start()
+
+    def action_toggle(self) -> None:
+        self.toggle()
+
+    def action_back(self) -> None:
+        if self._working:
+            self._set_status("Please wait until loading or the download is done.", "warning")
+            return
+        self.dismiss()  # on_unmount stops the voice changer
 
     @on(Button.Pressed, "#start-button")
     def _on_start_pressed(self) -> None:
@@ -552,14 +573,6 @@ class MainScreen(Screen[None]):
             save_settings(settings)
         except OSError:
             logger.warning("Could not save settings", exc_info=True)
-
-
-def _field(label: str, control: Widget, hint: str = "", kind: str = "") -> ComposeResult:
-    """Every setting looks the same: label, the control, a hint if it needs one, then a space."""
-    parts: list[Widget] = [Label(label, classes="field-label"), control]
-    if hint:
-        parts.append(Static(hint, classes="hint"))
-    yield Vertical(*parts, classes=f"field {kind}".strip())
 
 
 def _format_number(value: float) -> str:

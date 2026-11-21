@@ -1,16 +1,24 @@
+import codecs
+import os
+import re
 import shutil
+import signal
 import subprocess
 import sys
-from collections.abc import Mapping, Sequence
+import threading
+from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
 from typing import Protocol
 
-from voice_clone.errors import TrainingError
+from voice_clone.errors import TrainingError, TrainingStoppedError
 
 INSTALL_HINTS = {
     "ffmpeg": "Install: 'brew install ffmpeg' (macOS) or 'winget install ffmpeg' (Windows).",
     "git": "Install: 'xcode-select --install' (macOS) or 'winget install Git.Git' (Windows).",
 }
+READ_CHUNK_BYTES = 4096
+# A line ends with "\n" (or "\r\n"). A lone "\r" ends a progress-bar redraw, which is transient.
+LINE_END = re.compile(r"\r\n|\n|\r")
 PYTHON_HINT = (
     "Install Python {version} from https://www.python.org/downloads/ "
     "(macOS: or 'brew install python@{version}')."
@@ -38,6 +46,121 @@ def run_command(
         raise TrainingError(f"Could not run '{args[0]}': {exc}") from exc
     if result.returncode != 0:
         raise TrainingError(f"Command failed (exit code {result.returncode}): {' '.join(args)}")
+
+
+class StreamingRunner:
+    """Runs commands and passes their output (stdout and stderr) to callbacks, line by line.
+
+    on_line gets each finished line. on_transient gets progress-bar redraws (text ending in a
+    lone carriage return), which should replace each other instead of piling up.
+    stop() ends the running command with all its child processes, from any thread.
+    """
+
+    def __init__(
+        self,
+        on_line: Callable[[str], None],
+        on_transient: Callable[[str], None] = lambda _: None,
+        platform: str = sys.platform,
+    ) -> None:
+        self._on_line = on_line
+        self._on_transient = on_transient
+        self._platform = platform
+        self._lock = threading.Lock()
+        self._process: subprocess.Popen[bytes] | None = None
+        self._stopped = False
+
+    @property
+    def stopped(self) -> bool:
+        return self._stopped
+
+    def __call__(
+        self,
+        args: Sequence[str],
+        cwd: Path | None = None,
+        env: Mapping[str, str] | None = None,
+    ) -> None:
+        with self._lock:
+            if self._stopped:
+                raise TrainingStoppedError("Training was stopped.")
+            try:
+                process = subprocess.Popen(
+                    list(args),
+                    cwd=cwd,
+                    env=dict(env) if env else None,
+                    stdin=subprocess.DEVNULL,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    bufsize=0,
+                    **self._group_options(),
+                )
+            except OSError as exc:
+                raise TrainingError(f"Could not run '{args[0]}': {exc}") from exc
+            self._process = process
+        try:
+            assert process.stdout is not None
+            self._pump(process.stdout)
+            returncode = process.wait()
+        finally:
+            with self._lock:
+                self._process = None
+        if self._stopped:
+            raise TrainingStoppedError("Training was stopped.")
+        if returncode != 0:
+            raise TrainingError(f"Command failed (exit code {returncode}): {' '.join(args)}")
+
+    def stop(self) -> None:
+        with self._lock:
+            self._stopped = True
+            process = self._process
+        if process is not None and process.poll() is None:
+            self._kill_tree(process)
+
+    def _pump(self, stream: object) -> None:
+        decoder = codecs.getincrementaldecoder("utf-8")(errors="replace")
+        pending = ""
+        while True:
+            chunk = stream.read(READ_CHUNK_BYTES)  # type: ignore[attr-defined]
+            pending += decoder.decode(chunk or b"", final=not chunk)
+            pending = self._emit(pending, final=not chunk)
+            if not chunk:
+                return
+
+    def _emit(self, text: str, final: bool) -> str:
+        start = 0
+        for match in LINE_END.finditer(text):
+            # A "\r" at the very end may be the first half of "\r\n": wait for more text.
+            if match.group() == "\r" and match.end() == len(text) and not final:
+                break
+            line = text[start : match.start()]
+            if match.group() == "\r":
+                self._on_transient(line)
+            else:
+                self._on_line(line)
+            start = match.end()
+        rest = text[start:]
+        if final and rest:
+            self._on_line(rest)
+            return ""
+        return rest
+
+    def _group_options(self) -> dict[str, object]:
+        # Its own process group, so stop() can end Applio and every process it started.
+        if self._platform == "win32":
+            return {"creationflags": getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)}
+        return {"start_new_session": True}
+
+    def _kill_tree(self, process: subprocess.Popen[bytes]) -> None:
+        try:
+            if self._platform == "win32":
+                subprocess.run(
+                    ["taskkill", "/T", "/F", "/PID", str(process.pid)],
+                    capture_output=True,
+                    check=False,
+                )
+            else:
+                os.killpg(process.pid, signal.SIGTERM)
+        except OSError:
+            process.kill()
 
 
 def require_tool(name: str) -> str:

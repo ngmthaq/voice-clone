@@ -20,3 +20,7 @@ class ModelLoadError(VoiceCloneError):
 
 class TrainingError(VoiceCloneError):
     pass
+
+
+class TrainingStoppedError(TrainingError):
+    """The user stopped training. The last checkpoint is kept, so it can continue later."""

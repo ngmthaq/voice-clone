@@ -67,6 +67,20 @@ You can put several files in the `raw/` folder. The command uses all of them.
 
 ## Step 3 — Train
 
+You can train in the app or with a command. Both do the same thing.
+
+### In the app
+
+1. Run `python -m voice_clone run` (on macOS, `caffeinate -i python -m voice_clone run` keeps the Mac awake while training runs).
+2. Choose **Train a voice** on the start screen.
+3. In **Recordings**, type the path of the `raw/` folder or the audio files, or drag them in from Finder or Explorer. Separate several paths with spaces, and put quotes around a path that has spaces in it.
+4. Set **Voice name**, and **Epochs** if you want (for example 100).
+5. Press **Start training**. The screen shows each step, a progress bar with the current epoch, and Applio's output.
+
+While training runs, `esc` does not leave the screen: press **Stop training** first. When training ends, the new voice is in the **Voice** list of the voice changer.
+
+### With a command
+
 ```bash
 caffeinate -i python -m voice_clone train training/voice-2/raw --name voice-2 --epochs 100
 ```
@@ -74,7 +88,9 @@ caffeinate -i python -m voice_clone train training/voice-2/raw --name voice-2 --
 - `--name` is the voice name shown in the app. Use only letters, numbers, `-` and `_`.
 - `caffeinate -i` (macOS only) keeps the Mac awake while training runs. On Windows, leave it out.
 
-The command runs 4 steps:
+### What training does
+
+Training runs 4 steps:
 
 1. **Prepare.** It changes the recordings to mono 48 kHz WAV, removes low hum, and evens out the volume. The result goes to `training/<name>/dataset/`.
 2. **Set up Applio.** This happens only on the first run.
@@ -91,8 +107,8 @@ The command runs 4 steps:
 
 ### Pause and continue
 
-- Press **Ctrl+C** to pause.
-- Run **the same command** again. It continues from the last checkpoint, which is saved every 10 epochs.
+- Press **Stop training** in the app, or **Ctrl+C** for the command. Quitting the app (`q`) also stops training.
+- Start again with **the same voice name** (in the app) or **the same command**. It continues from the last checkpoint, which is saved every 10 epochs. Tick **Start over** (or use `--restart`) to throw that run away instead.
 - The voice is copied to `voices/<name>/` only when all epochs are done.
 
 > Run **one training at a time**. All runs share the same Applio install and the same GPU.
@@ -107,7 +123,7 @@ The command runs 4 steps:
    python -m voice_clone run
    ```
 
-2. Pick the new voice in the **Voice** list and press **Start**.
+2. Choose **Voice changer**, pick the new voice in the **Voice** list and press **Start**.
 3. If the voice sounds too high or too low, change **Pitch**.
 
 The trained files are in `voices/<name>/`:

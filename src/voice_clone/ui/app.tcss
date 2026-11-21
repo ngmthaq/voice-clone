@@ -1,5 +1,39 @@
-MainScreen {
+MainScreen,
+TrainScreen {
     align: center top;
+}
+
+HomeScreen {
+    align: center middle;
+}
+
+#home {
+    width: 60;
+    max-width: 100%;
+    height: auto;
+    padding: 0 2;
+}
+
+#home-title {
+    text-style: bold;
+    content-align: center middle;
+    width: 100%;
+    margin-bottom: 2;
+}
+
+#home Button {
+    width: 100%;
+}
+
+.home-hint {
+    text-align: center;
+    width: 100%;
+    margin-bottom: 2;
+}
+
+.intro {
+    margin-bottom: 1;
+    text-style: bold;
 }
 
 #panel {
@@ -19,8 +53,13 @@ MainScreen {
     height: auto;
 }
 
+/* One empty line between the tab bar and the first setting, on every tab. */
 #tabs TabPane {
-    padding: 0 1;
+    padding: 1 1 0 1;
+}
+
+#tabs TabPane > .section-title:first-child {
+    margin-top: 0;
 }
 
 #controls {
@@ -78,6 +117,42 @@ MainScreen {
     width: 100%;
 }
 
+/* Same side margin as the voice changer's tab content. */
+TrainPanelWidget,
+.intro {
+    height: auto;
+    padding: 0 1;
+}
+
+/* An empty line after the last message, above the footer (like the voice changer). */
+TrainPanelWidget {
+    padding-bottom: 1;
+}
+
+TrainPanelWidget Checkbox {
+    width: 100%;
+}
+
+#train-button {
+    margin-top: 1;
+    width: 100%;
+}
+
+#train-progress,
+#train-status {
+    margin-top: 1;
+}
+
+#train-status {
+    height: auto;
+}
+
+#train-log {
+    height: 16;
+    margin-top: 1;
+    border: round $panel;
+}
+
 #start-button {
     margin-top: 1;
     width: 100%;
@@ -97,15 +172,18 @@ LevelMeterWidget {
     height: auto;
 }
 
-#status.error {
+#status.error,
+#train-status.error {
     color: $error;
 }
 
-#status.warning {
+#status.warning,
+#train-status.warning {
     color: $warning;
 }
 
-#status.running {
+#status.running,
+#train-status.running {
     color: $success;
 }
 

@@ -11,6 +11,12 @@ MIC = AudioDevice(0, "Mic", 1, 0, 48000.0)
 BLACKHOLE = AudioDevice(1, "BlackHole 2ch", 2, 2, 48000.0)
 
 
+async def open_voice_changer(app, pilot) -> None:
+    await pilot.pause()
+    app.screen.query_one("#open-changer").press()
+    await pilot.pause()
+
+
 @pytest.fixture
 def empty_environment(tmp_path, monkeypatch):
     (tmp_path / "voices").mkdir()
@@ -24,7 +30,7 @@ def test_no_voices_shows_status_message(empty_environment):
     async def scenario():
         app = VoiceCloneApp()
         async with app.run_test(size=(100, 50)) as pilot:
-            await pilot.pause()
+            await open_voice_changer(app, pilot)
             return str(app.screen.query_one("#status").render())
 
     status = asyncio.run(scenario())
@@ -48,7 +54,7 @@ def _run(scenario_body):
     async def scenario():
         app = VoiceCloneApp()
         async with app.run_test(size=(100, 60)) as pilot:
-            await pilot.pause()
+            await open_voice_changer(app, pilot)
             return await scenario_body(app, pilot)
 
     return asyncio.run(scenario())
