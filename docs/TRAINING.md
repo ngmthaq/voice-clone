@@ -23,7 +23,7 @@ The first training run also:
 
 Later runs skip this setup.
 
-The app itself must already be installed (see the README), and its virtual environment must be active (`source .venv/bin/activate`, or `.venv\Scripts\Activate.ps1` on Windows).
+The app itself must already be installed (see [INSTALL.md](INSTALL.md)), and its virtual environment must be active (`source .venv/bin/activate`, or `.venv\Scripts\Activate.ps1` on Windows).
 
 ---
 
@@ -98,6 +98,8 @@ Training runs 4 steps:
 4. **Train.** It trains an RVC v2 model and copies the result to `voices/<name>/`.
 
 ### How long does it take?
+
+Training uses an NVIDIA GPU (Windows), the Apple GPU (Apple Silicon), or the CPU.
 
 | Computer | About 11 minutes of audio, 100 epochs |
 | --- | --- |
