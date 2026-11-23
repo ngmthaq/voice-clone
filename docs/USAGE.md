@@ -21,7 +21,7 @@ Use headphones, so the converted voice does not feed back into your microphone.
 
 While the voice is running, all settings are locked. Press Stop to change them, then Start again.
 
-Keys: `space` start or stop, `esc` back to the start screen (this stops the voice), `q` quit. Your choices are saved and restored on the next start.
+Keys: `space` start or stop, `esc` back to the start screen (this stops the voice), `r` restart the app (this stops the voice and finds microphones or voices added since it started), `q` quit. Your choices are saved and restored on the next start.
 
 ## Make the voice match better
 

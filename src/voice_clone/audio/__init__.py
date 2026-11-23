@@ -4,6 +4,7 @@ from voice_clone.audio.devices import (
     find_virtual_output,
     list_input_devices,
     list_output_devices,
+    rescan_devices,
 )
 from voice_clone.audio.noise_gate import GateSettings
 from voice_clone.audio.pipeline import ConversionPipeline
@@ -18,4 +19,5 @@ __all__ = [
     "find_virtual_output",
     "list_input_devices",
     "list_output_devices",
+    "rescan_devices",
 ]

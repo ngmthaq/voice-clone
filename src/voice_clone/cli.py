@@ -19,10 +19,21 @@ def main(argv: Sequence[str] | None = None) -> int:
     setup_logging()
     if args.command == "train":
         return _run_train(args)
-    from voice_clone.app import VoiceCloneApp
+    from voice_clone.app import RESTART, VoiceCloneApp
 
-    VoiceCloneApp().run()
+    while VoiceCloneApp().run() == RESTART:
+        logger.info("Restarting the app")
+        _rescan_audio_devices()
     return 0
+
+
+def _rescan_audio_devices() -> None:
+    try:
+        from voice_clone.audio import rescan_devices
+
+        rescan_devices()
+    except Exception:
+        logger.warning("Could not restart the audio system", exc_info=True)
 
 
 def _build_parser() -> argparse.ArgumentParser:

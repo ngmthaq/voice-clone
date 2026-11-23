@@ -62,3 +62,39 @@ def test_run_and_no_command_open_the_app(monkeypatch: pytest.MonkeyPatch, argv) 
 
     assert cli.main(argv) == 0
     assert opened == [True]
+
+
+def test_restart_runs_the_app_again_and_rescans_devices(monkeypatch: pytest.MonkeyPatch) -> None:
+    import voice_clone.app as app_module
+
+    results = iter([app_module.RESTART, app_module.RESTART, None])
+    runs = []
+    rescans = []
+
+    class FakeApp:
+        def run(self):
+            runs.append(True)
+            return next(results)
+
+    monkeypatch.setattr(app_module, "VoiceCloneApp", FakeApp)
+    monkeypatch.setattr("voice_clone.audio.rescan_devices", lambda: rescans.append(True))
+
+    assert cli.main(["run"]) == 0
+    assert len(runs) == 3
+    assert len(rescans) == 2
+
+
+def test_r_key_exits_with_restart() -> None:
+    import asyncio
+
+    from voice_clone.app import RESTART, VoiceCloneApp
+
+    async def scenario():
+        app = VoiceCloneApp()
+        async with app.run_test() as pilot:
+            await pilot.pause()
+            await pilot.press("r")
+            await pilot.pause()
+        return app.return_value
+
+    assert asyncio.run(scenario()) == RESTART

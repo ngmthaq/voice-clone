@@ -36,6 +36,11 @@ def find_device_by_name(devices: list[AudioDevice], name: str | None) -> AudioDe
     return next((device for device in devices if device.name == name), None)
 
 
+def rescan_devices() -> None:
+    sounddevice._terminate()
+    sounddevice._initialize()
+
+
 def _query_devices() -> list[AudioDevice]:
     return [
         AudioDevice(
