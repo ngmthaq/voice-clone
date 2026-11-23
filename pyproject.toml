@@ -6,7 +6,7 @@ requires-python = ">=3.12,<3.13"
 dependencies = [
     "textual",
     "numpy",
-    "sounddevice",
+    "sounddevice>=0.5,<0.6",  # rescan_devices() uses its private _terminate/_initialize
     "soxr",
     "torch==2.5.1",
     "torchaudio==2.5.1",

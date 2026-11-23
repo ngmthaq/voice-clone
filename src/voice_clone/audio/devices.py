@@ -37,6 +37,12 @@ def find_device_by_name(devices: list[AudioDevice], name: str | None) -> AudioDe
 
 
 def rescan_devices() -> None:
+    """Restart PortAudio so devices plugged in after start-up show up.
+
+    PortAudio only lists devices when it starts, and sounddevice has no public way to restart
+    it. These private functions are stable in 0.5.x; pyproject.toml pins that range. Call this
+    only when no stream is open.
+    """
     sounddevice._terminate()
     sounddevice._initialize()
 

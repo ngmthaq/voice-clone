@@ -77,9 +77,19 @@ def test_existing_checkpoint_resumes_without_preprocessing(tmp_path: Path) -> No
     (model_dir / "G_5.pth").touch()
     (model_dir / "D_5.pth").touch()
 
-    _run(tmp_path, applio)
+    prepared = []
+    options = TrainOptions(name="me", inputs=[tmp_path / "rec.m4a"])
+    train_voice(
+        options,
+        applio,
+        tmp_path / "training",
+        tmp_path / "voices",
+        report=lambda _: None,
+        prepare=lambda *args, **kwargs: prepared.append(args),
+    )
 
     assert applio.steps == ["install", "train"]
+    assert prepared == []
 
 
 def test_restart_throws_away_old_run(tmp_path: Path) -> None:

@@ -1,3 +1,6 @@
+import pytest
+
+import voice_clone.config as config
 from voice_clone.config import Settings, load_settings, save_settings
 
 
@@ -45,3 +48,20 @@ def test_advanced_voice_defaults():
         settings.pitch_smoothing_ms,
         settings.context_ms,
     ) == (67, 50, 30, 1000)
+
+
+def test_failed_save_keeps_the_old_file(tmp_path, monkeypatch):
+    path = tmp_path / "settings.toml"
+    save_settings(Settings(pitch=3), path)
+
+    def broken_dump(data, file):
+        file.write(b"pitch = ")
+        raise OSError("disk full")
+
+    monkeypatch.setattr(config.tomli_w, "dump", broken_dump)
+
+    with pytest.raises(OSError):
+        save_settings(Settings(pitch=5), path)
+
+    assert load_settings(path).pitch == 3
+    assert [p.name for p in tmp_path.iterdir()] == ["settings.toml"]

@@ -23,6 +23,11 @@ class TrainScreen(Screen[None]):
                 yield TrainPanelWidget(id="train-panel")
         yield Footer()
 
+    @property
+    def busy_message(self) -> str | None:
+        panel = self.query_one("#train-panel", TrainPanelWidget)
+        return "Training is running." if panel.running else None
+
     def action_back(self) -> None:
         panel = self.query_one("#train-panel", TrainPanelWidget)
         if panel.running:

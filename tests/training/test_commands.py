@@ -87,3 +87,33 @@ def test_no_command_runs_after_stop() -> None:
     with pytest.raises(TrainingStoppedError):
         runner(_python("print('should not run')"))
     assert out.lines == []
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="SIGTERM is not used on Windows")
+def test_stop_kills_a_command_that_ignores_sigterm() -> None:
+    out = Collected()
+    runner = StreamingRunner(on_line=out.lines.append, kill_grace_seconds=0.5)
+    code = (
+        "import signal, time\n"
+        "signal.signal(signal.SIGTERM, signal.SIG_IGN)\n"
+        "print('ready', flush=True)\n"
+        "time.sleep(30)\n"
+    )
+    errors: list[Exception] = []
+
+    def run() -> None:
+        try:
+            runner(_python(code))
+        except Exception as exc:
+            errors.append(exc)
+
+    thread = threading.Thread(target=run)
+    thread.start()
+    deadline = time.monotonic() + 10
+    while "ready" not in out.lines and time.monotonic() < deadline:
+        time.sleep(0.02)
+    runner.stop()
+    thread.join(timeout=10)
+
+    assert not thread.is_alive()
+    assert len(errors) == 1 and isinstance(errors[0], TrainingStoppedError)

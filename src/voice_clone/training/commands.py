@@ -17,6 +17,7 @@ INSTALL_HINTS = {
     "git": "Install: 'xcode-select --install' (macOS) or 'winget install Git.Git' (Windows).",
 }
 READ_CHUNK_BYTES = 4096
+KILL_GRACE_SECONDS = 10.0
 LINE_END = re.compile(r"\r\n|\n|\r")
 PYTHON_HINT = (
     "Install Python {version} from https://www.python.org/downloads/ "
@@ -59,8 +60,10 @@ class StreamingRunner:
         on_line: Callable[[str], None],
         on_transient: Callable[[str], None] = lambda _: None,
         platform: str = sys.platform,
+        kill_grace_seconds: float = KILL_GRACE_SECONDS,
     ) -> None:
         self._on_line = on_line
+        self._kill_grace_seconds = kill_grace_seconds
         self._on_transient = on_transient
         self._platform = platform
         self._lock = threading.Lock()
@@ -112,6 +115,10 @@ class StreamingRunner:
             process = self._process
         if process is not None and process.poll() is None:
             self._kill_tree(process)
+            if self._platform != "win32":
+                threading.Thread(
+                    target=self._force_kill_later, args=(process,), daemon=True
+                ).start()
 
     def _pump(self, stream: object) -> None:
         decoder = codecs.getincrementaldecoder("utf-8")(errors="replace")
@@ -145,7 +152,16 @@ class StreamingRunner:
             return {"creationflags": getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)}
         return {"start_new_session": True}
 
-    def _kill_tree(self, process: subprocess.Popen[bytes]) -> None:
+    def _force_kill_later(self, process: subprocess.Popen[bytes]) -> None:
+        """SIGKILL the group if it ignored SIGTERM, so stop() never hangs."""
+        try:
+            process.wait(timeout=self._kill_grace_seconds)
+        except subprocess.TimeoutExpired:
+            self._kill_tree(process, sig=signal.SIGKILL)
+
+    def _kill_tree(
+        self, process: subprocess.Popen[bytes], sig: int = signal.SIGTERM
+    ) -> None:
         try:
             if self._platform == "win32":
                 subprocess.run(
@@ -154,7 +170,7 @@ class StreamingRunner:
                     check=False,
                 )
             else:
-                os.killpg(process.pid, signal.SIGTERM)
+                os.killpg(process.pid, sig)
         except OSError:
             process.kill()
 

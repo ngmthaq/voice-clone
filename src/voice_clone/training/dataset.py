@@ -51,6 +51,7 @@ def prepare_dataset(
     runner: CommandRunner = run_command,
 ) -> DatasetInfo:
     sources = collect_audio_files(inputs)
+    _refuse_inputs_inside(sources, out_dir)
     if out_dir.exists():
         shutil.rmtree(out_dir)
     out_dir.mkdir(parents=True)
@@ -87,6 +88,17 @@ def prepare_dataset(
             f"Only {total:.0f} s of audio found. Record at least 1 minute (10+ minutes is best)."
         )
     return DatasetInfo(directory=out_dir, files=outputs, total_seconds=total)
+
+
+def _refuse_inputs_inside(sources: Sequence[Path], out_dir: Path) -> None:
+    """The output folder is deleted before converting, so no input may live inside it."""
+    folder = out_dir.resolve()
+    inside = next((path for path in sources if path.resolve().is_relative_to(folder)), None)
+    if inside is not None:
+        raise TrainingError(
+            f"'{inside}' is inside {out_dir}, which is rebuilt for every run. "
+            "Use your original recordings instead."
+        )
 
 
 def _duration_seconds(path: Path) -> float:

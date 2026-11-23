@@ -401,3 +401,45 @@ def test_minimal_preset_is_first_and_sets_lowest_values(empty_environment):
     assert _run(body) == "minimal"
     saved = config.load_settings()
     assert (saved.index_percent, saved.context_ms, saved.block_ms) == (0, 200, 1000)
+
+
+def test_pipeline_started_after_the_screen_closed_is_stopped(empty_environment, monkeypatch):
+    stopped = []
+
+    class FakePipeline:
+        def __init__(self, *args, **kwargs) -> None:
+            pass
+
+        def warm_up(self) -> None:
+            pass
+
+        def start(self) -> None:
+            pass
+
+        def stop(self) -> None:
+            stopped.append(True)
+
+    class FakeEngine:
+        def load(self, profile) -> None:
+            pass
+
+        def set_pitch(self, semitones) -> None:
+            pass
+
+    async def scenario():
+        app = VoiceCloneApp()
+        async with app.run_test(size=(100, 50)) as pilot:
+            await open_voice_changer(app, pilot)
+            screen = app.screen
+            screen._engine = FakeEngine()
+            app.pop_screen()
+            await pilot.pause()
+            return screen
+
+    screen = asyncio.run(scenario())
+    monkeypatch.setattr(main_screen, "ConversionPipeline", FakePipeline)
+    profile = main_screen.VoiceProfile("v", None, None)
+
+    main_screen.MainScreen._start_pipeline.__wrapped__(screen, MIC, BLACKHOLE, profile, 0)
+
+    assert stopped == [True]

@@ -1,3 +1,5 @@
+import hashlib
+
 import pytest
 
 import voice_clone.engine.download as download
@@ -8,8 +10,11 @@ from voice_clone.errors import ModelDownloadError
 @pytest.fixture
 def fake_hub(monkeypatch):
     calls = []
+    monkeypatch.setattr(
+        download, "SHA256", {name: hashlib.sha256(b"x").hexdigest() for name in download.SHA256}
+    )
 
-    def fake_download(repo_id, filename, local_dir):
+    def fake_download(repo_id, filename, revision, local_dir):
         calls.append(filename)
         (local_dir / filename).write_bytes(b"x")
 
@@ -66,3 +71,30 @@ def test_progress_bars_use_a_thread_lock_inside_the_tui(tmp_path, fake_hub):
     ensure_base_models(tmp_path)
 
     assert isinstance(tqdm.tqdm.get_lock(), type(threading.RLock()))
+
+
+def test_downloads_are_pinned_to_a_revision(tmp_path, monkeypatch, fake_hub):
+    revisions = []
+    original = download.hf_hub_download
+
+    def recording(repo_id, filename, revision, local_dir):
+        revisions.append(revision)
+        original(repo_id=repo_id, filename=filename, revision=revision, local_dir=local_dir)
+
+    monkeypatch.setattr(download, "hf_hub_download", recording)
+
+    ensure_base_models(tmp_path)
+
+    assert revisions and all(len(revision) == 40 for revision in revisions)
+
+
+def test_checksum_mismatch_deletes_the_file_and_raises(tmp_path, monkeypatch):
+    def tampered(repo_id, filename, revision, local_dir):
+        (local_dir / filename).write_bytes(b"tampered")
+
+    monkeypatch.setattr(download, "hf_hub_download", tampered)
+
+    with pytest.raises(ModelDownloadError, match="did not match"):
+        ensure_base_models(tmp_path)
+
+    assert not (base_model_paths(tmp_path).contentvec_dir / "config.json").exists()

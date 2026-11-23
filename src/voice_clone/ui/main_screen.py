@@ -1,5 +1,5 @@
 import logging
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import replace
 
 from textual import on, work
@@ -7,6 +7,7 @@ from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.containers import Horizontal, Vertical, VerticalScroll
 from textual.screen import Screen
+from textual.timer import Timer
 from textual.validation import Number
 from textual.widgets import (
     Button,
@@ -51,6 +52,7 @@ logger = logging.getLogger(__name__)
 MIN_PITCH = -12
 MAX_PITCH = 12
 METER_REFRESH_SECONDS = 0.1
+SAVE_DELAY_SECONDS = 0.3
 NO_VIRTUAL_DEVICE_MESSAGE = (
     "No virtual audio device found. Install BlackHole 2ch (macOS) or VB-CABLE (Windows)."
 )
@@ -204,6 +206,8 @@ class MainScreen(Screen[None]):
         self._output_level = 0.0
         self._pipeline_error: Exception | None = None
         self._slow_warned = False
+        self._save_timer: Timer | None = None
+        self._pending_save: dict[str, object] | None = None
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -307,6 +311,13 @@ class MainScreen(Screen[None]):
 
     def on_unmount(self) -> None:
         self._stop_pipeline()
+        self._flush_save()
+
+    @property
+    def busy_message(self) -> str | None:
+        if not self._working:
+            return None
+        return "The voice is loading." if self._models_ready else "Base models are downloading."
 
     def toggle(self) -> None:
         if self._working:
@@ -355,7 +366,7 @@ class MainScreen(Screen[None]):
         name = next(name for field_id, _, name, *_ in VOICE_FIELDS if field_id == event.input.id)
         self._voice_options[name] = int(event.value)
         self._apply_voice_options()
-        self._save_current_settings()
+        self._schedule_save()
         self._sync_preset_select()
 
     @on(Select.Changed, "#preset-select")
@@ -413,11 +424,11 @@ class MainScreen(Screen[None]):
         self._gate = settings
         if self._pipeline is not None:
             self._pipeline.set_gate_settings(settings)
-        self._save_current_settings()
+        self._schedule_save()
 
     @on(Select.Changed)
     def _on_selection_changed(self) -> None:
-        self._save_current_settings()
+        self._schedule_save()
 
     def _populate_selects(self) -> None:
         self._inputs = list_input_devices()
@@ -537,12 +548,25 @@ class MainScreen(Screen[None]):
             pipeline.warm_up()
             pipeline.start()
         except VoiceCloneError as exc:
-            self.app.call_from_thread(self._start_failed, str(exc))
+            self._call_ui(self._start_failed, str(exc))
         except Exception as exc:
             logger.exception("Could not start voice conversion")
-            self.app.call_from_thread(self._start_failed, str(exc) or type(exc).__name__)
+            self._call_ui(self._start_failed, str(exc) or type(exc).__name__)
         else:
-            self.app.call_from_thread(self._start_succeeded, pipeline)
+            if not self._call_ui(self._start_succeeded, pipeline):
+                # The app closed while the voice was loading: nobody owns this pipeline.
+                pipeline.stop()
+
+    def _call_ui(self, callback: Callable[..., object], *args: object) -> bool:
+        """Run `callback` on the UI thread. False if the app or this screen is gone."""
+        if not self.is_attached:
+            return False
+        try:
+            self.app.call_from_thread(callback, *args)
+        except RuntimeError:
+            logger.debug("UI is gone; dropping %s", callback.__name__)
+            return False
+        return True
 
     def _get_engine(self) -> RvcEngine:
         if self._engine is None:
@@ -617,7 +641,7 @@ class MainScreen(Screen[None]):
         self._refresh_pitch_label()
         if self._engine is not None and self._converting:
             self._engine.set_pitch(self._pitch)
-        self._save_current_settings()
+        self._schedule_save()
 
     def _refresh_pitch_label(self) -> None:
         self.query_one("#pitch-label", Label).update(f"{self._pitch:+d}")
@@ -658,23 +682,37 @@ class MainScreen(Screen[None]):
         value = self.query_one(selector, Select).value
         return value if isinstance(value, str) else None
 
-    def _save_current_settings(self) -> None:
+    def _schedule_save(self) -> None:
+        """Save shortly after the last change, so typing a value does not write on every key.
+
+        The values are taken now: when the delayed write runs, or the screen is closing, the
+        widgets may already be gone.
+        """
         if not self._initialised:
             return
-        settings = load_settings().model_copy(
-            update=dict(
-                input_device=self._selected_name("#input-select"),
-                output_device=self._selected_name("#output-select"),
-                profile=self._selected_name("#voice-select"),
-                pitch=self._pitch,
-                **self._voice_options,
-                gate_hold_ms=self._gate.hold_ms,
-                gate_pre_open_ms=self._gate.pre_open_ms,
-                gate_open_above_db=self._gate.open_above_floor_db,
-            )
+        self._pending_save = dict(
+            input_device=self._selected_name("#input-select"),
+            output_device=self._selected_name("#output-select"),
+            profile=self._selected_name("#voice-select"),
+            pitch=self._pitch,
+            **self._voice_options,
+            gate_hold_ms=self._gate.hold_ms,
+            gate_pre_open_ms=self._gate.pre_open_ms,
+            gate_open_above_db=self._gate.open_above_floor_db,
         )
+        if self._save_timer is not None:
+            self._save_timer.stop()
+        self._save_timer = self.set_timer(SAVE_DELAY_SECONDS, self._flush_save)
+
+    def _flush_save(self) -> None:
+        if self._save_timer is not None:
+            self._save_timer.stop()
+            self._save_timer = None
+        values, self._pending_save = self._pending_save, None
+        if values is None:
+            return
         try:
-            save_settings(settings)
+            save_settings(load_settings().model_copy(update=values))
         except OSError:
             logger.warning("Could not save settings", exc_info=True)
 

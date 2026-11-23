@@ -1,3 +1,4 @@
+import hashlib
 import logging
 import threading
 from collections.abc import Callable
@@ -13,9 +14,18 @@ from voice_clone.errors import ModelDownloadError
 logger = logging.getLogger(__name__)
 
 CONTENTVEC_REPO = "lengyue233/content-vec-best"
+CONTENTVEC_REVISION = "ab04aa7067b99ee05cc82499bc64916b980a1967"
 CONTENTVEC_FILES = ("config.json", "pytorch_model.bin")
 RMVPE_REPO = "lj1995/VoiceConversionWebUI"
+RMVPE_REVISION = "e6d0c1a17da07c33557852f9dfa2bd44cc75737d"
 RMVPE_FILE = "rmvpe.pt"
+# Checked after each download, so a changed upstream file is never loaded.
+SHA256 = {
+    "config.json": "2ddde063b795d38d9051a7215a092fecf4cfe148b54251e38de51d88d356898b",
+    "pytorch_model.bin": "d8dd400e054ddf4e6be75dab5a2549db748cc99e756a097c496c099f65a4854e",
+    "rmvpe.pt": "6d62215f4306e3ca278246188607209f09af3dc77ed4232efdd069798c4ec193",
+}
+HASH_CHUNK_BYTES = 1 << 20
 CONTENTVEC_DIRNAME = "content-vec-best"
 RMVPE_DIRNAME = "rmvpe"
 CONTENTVEC_APPROX_MB = {"config.json": 1, "pytorch_model.bin": 378}
@@ -79,26 +89,51 @@ def ensure_base_models(
     paths = base_model_paths(models_dir)
     _quiet_progress_bars()
     downloads = [
-        (CONTENTVEC_REPO, name, paths.contentvec_dir, paths.contentvec_dir / name)
+        (
+            CONTENTVEC_REPO,
+            CONTENTVEC_REVISION,
+            name,
+            paths.contentvec_dir,
+            paths.contentvec_dir / name,
+        )
         for name in CONTENTVEC_FILES
     ]
-    downloads.append((RMVPE_REPO, RMVPE_FILE, paths.rmvpe_path.parent, paths.rmvpe_path))
+    downloads.append(
+        (RMVPE_REPO, RMVPE_REVISION, RMVPE_FILE, paths.rmvpe_path.parent, paths.rmvpe_path)
+    )
     total = len(downloads)
-    for index, (repo, filename, target_dir, target) in enumerate(downloads):
+    for index, (repo, revision, filename, target_dir, target) in enumerate(downloads):
         if target.is_file():
             _report(on_progress, f"{filename} already downloaded", (index + 1) / total)
             continue
         _report(on_progress, f"Downloading {filename}", index / total)
         try:
             target_dir.mkdir(parents=True, exist_ok=True)
-            hf_hub_download(repo_id=repo, filename=filename, local_dir=target_dir)
+            hf_hub_download(
+                repo_id=repo, filename=filename, revision=revision, local_dir=target_dir
+            )
         except Exception as error:
             logger.exception("Download of %s from %s failed", filename, repo)
             raise ModelDownloadError(
                 f"Could not download {filename}. Check your internet connection and try again."
             ) from error
+        _verify(target, SHA256[filename])
         _report(on_progress, f"Downloaded {filename}", (index + 1) / total)
     return paths
+
+
+def _verify(path: Path, expected: str) -> None:
+    digest = hashlib.sha256()
+    with path.open("rb") as file:
+        while chunk := file.read(HASH_CHUNK_BYTES):
+            digest.update(chunk)
+    if digest.hexdigest() != expected:
+        path.unlink(missing_ok=True)
+        logger.error("Checksum mismatch for %s: got %s", path, digest.hexdigest())
+        raise ModelDownloadError(
+            f"{path.name} did not match the expected file, so it was deleted. "
+            "Try the download again."
+        )
 
 
 def _quiet_progress_bars() -> None:

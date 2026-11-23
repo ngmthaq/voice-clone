@@ -1,4 +1,5 @@
 import logging
+import os
 from pathlib import Path
 
 import tomli
@@ -55,8 +56,15 @@ def save_settings(settings: Settings, path: Path | None = None) -> None:
     target = path or settings_path()
     target.parent.mkdir(parents=True, exist_ok=True)
     data = settings.model_dump(exclude_none=True)
-    with target.open("wb") as file:
-        tomli_w.dump(data, file)
+    # Write a temp file and swap it in, so a crash never leaves a half-written settings file.
+    temp = target.with_name(f"{target.name}.tmp")
+    try:
+        with temp.open("wb") as file:
+            tomli_w.dump(data, file)
+        os.replace(temp, target)
+    except BaseException:
+        temp.unlink(missing_ok=True)
+        raise
 
 
 CUSTOM_PRESET = "custom"

@@ -53,26 +53,34 @@ def train_voice(
             "or pick another --name."
         )
 
-    report("Step 1/4: Preparing your recordings…")
-    dataset = prepare(
-        options.inputs, training_root / options.name / "dataset", ffmpeg=require_tool("ffmpeg")
-    )
-    report(f"  {len(dataset.files)} file(s), {dataset.total_seconds / 60:.1f} minutes of audio.")
-    if dataset.is_short:
-        report("  Note: less than 10 minutes of audio. The voice will sound better with more.")
+    model_dir = applio.model_dir(options.name)
+    resuming = not options.restart and _has_checkpoint(model_dir)
+    dataset: DatasetInfo | None = None
+    if resuming:
+        # The checkpoint already has its sliced audio and features; a new dataset is unused.
+        report("Step 1/4: Found an earlier run. Reusing its prepared recordings.")
+    else:
+        report("Step 1/4: Preparing your recordings…")
+        dataset = prepare(
+            options.inputs,
+            training_root / options.name / "dataset",
+            ffmpeg=require_tool("ffmpeg"),
+        )
+        minutes = dataset.total_seconds / 60
+        report(f"  {len(dataset.files)} file(s), {minutes:.1f} minutes of audio.")
+        if dataset.is_short:
+            report("  Note: less than 10 minutes of audio. The voice will sound better with more.")
 
     report("Step 2/4: Setting up Applio (only slow the first time)…")
     applio.ensure_installed(report=lambda message: report(f"  {message}"))
 
-    model_dir = applio.model_dir(options.name)
-    if options.restart and model_dir.exists():
-        report("  --restart: removing the previous training run.")
-        shutil.rmtree(model_dir)
     cpu_cores = max(1, (os.cpu_count() or 2) - 1)
-    if _has_checkpoint(model_dir):
-        report("Step 3/4: Found an earlier run. Continuing from its last checkpoint.")
+    if dataset is None:
+        report("Step 3/4: Continuing from the last checkpoint.")
     else:
         if model_dir.exists():
+            if options.restart:
+                report("  --restart: removing the previous training run.")
             shutil.rmtree(model_dir)
         report("Step 3/4: Slicing audio and extracting voice features…")
         applio.preprocess(options.name, dataset.directory, options.sample_rate, cpu_cores)

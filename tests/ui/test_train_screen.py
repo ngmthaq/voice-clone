@@ -263,3 +263,52 @@ def test_training_options_are_saved_and_restored(environment, monkeypatch):
 
     assert seen["options"].save_every == 5
     assert _run(reopen) == ["me", "120", "4", "5"]
+
+
+def _start_blocking_training(monkeypatch):
+    release = __import__("threading").Event()
+
+    def fake_train(options, applio, training_root, voices_root, report, prepare, pause_hint):
+        release.wait(10)
+        return voices_root / options.name
+
+    monkeypatch.setattr(train_panel, "train_voice", fake_train)
+    return release
+
+
+@pytest.mark.parametrize("key", ["q", "r"])
+def test_quit_and_restart_need_a_second_press_while_training(environment, monkeypatch, key):
+    release = _start_blocking_training(monkeypatch)
+
+    async def body(app, pilot):
+        await _press_start(app, pilot, environment / "rec.m4a")
+        app.screen.query_one("#train-log").focus()
+        await pilot.press(key)
+        await pilot.pause()
+        after_first = (app.is_running, app.screen.query_one("#train-panel").running)
+        await pilot.press(key)
+        await pilot.pause()
+        release.set()
+        return after_first, app.return_value
+
+    after_first, return_value = _run(body)
+
+    assert after_first == (True, True)
+    assert return_value == ("restart" if key == "r" else None)
+
+
+def test_a_different_key_does_not_confirm(environment, monkeypatch):
+    release = _start_blocking_training(monkeypatch)
+
+    async def body(app, pilot):
+        await _press_start(app, pilot, environment / "rec.m4a")
+        app.screen.query_one("#train-log").focus()
+        await pilot.press("q")
+        await pilot.press("r")
+        await pilot.pause()
+        still_running = app.is_running
+        release.set()
+        await _wait_until_finished(app, pilot)
+        return still_running
+
+    assert _run(body) is True

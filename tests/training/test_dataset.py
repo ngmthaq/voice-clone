@@ -98,3 +98,17 @@ def test_prepare_rejects_less_than_one_minute(tmp_path: Path) -> None:
 
     with pytest.raises(TrainingError, match="at least 1 minute"):
         prepare_dataset([source], tmp_path / "out", runner=runner)
+
+
+def test_prepare_refuses_inputs_inside_the_output_folder(tmp_path: Path) -> None:
+    out = tmp_path / "dataset"
+    out.mkdir()
+    inside = out / "001_take.wav"
+    inside.touch()
+    runner, calls = _fake_ffmpeg(120)
+
+    with pytest.raises(TrainingError, match="rebuilt for every run"):
+        prepare_dataset([out], out, runner=runner)
+
+    assert inside.exists()
+    assert calls == []

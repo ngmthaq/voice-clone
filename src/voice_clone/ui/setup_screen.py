@@ -44,6 +44,7 @@ class SetupScreen(Screen[None]):
         self._busy = False
         self._applio_events: deque[tuple[str, str]] = deque()
         self._applio_runner: StreamingRunner | None = None
+        self._downloading = False
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -73,6 +74,14 @@ class SetupScreen(Screen[None]):
         if self._applio_runner is not None:
             self._applio_runner.stop()
 
+    @property
+    def busy_message(self) -> str | None:
+        if self._applio_runner is not None:
+            return "Applio is installing."
+        if self._downloading:
+            return "Base models are downloading."
+        return None
+
     def action_back(self) -> None:
         if self._busy:
             self.notify(BUSY_MESSAGE, severity="warning")
@@ -88,6 +97,7 @@ class SetupScreen(Screen[None]):
         if self._busy:
             return
         self._set_busy(True)
+        self._downloading = True
         progress = self.query_one("#models-progress", ProgressBar)
         progress.update(progress=0)
         progress.display = True
@@ -201,6 +211,7 @@ class SetupScreen(Screen[None]):
 
     def _download_finished(self, error: str | None) -> None:
         self.query_one("#models-progress", ProgressBar).display = False
+        self._downloading = False
         self._set_busy(False)
         if error is not None:
             self._set_status(error, "error")
