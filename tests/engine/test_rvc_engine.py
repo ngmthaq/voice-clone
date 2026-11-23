@@ -196,3 +196,107 @@ def test_convert_tail_decodes_only_the_last_frames(engine):
 
     assert calls[0]["skip_head"] == (16000 - 6400) // 160 - rvc_engine.DECODE_MARGIN_FRAMES
     assert calls[0]["return_length"] == 100 - calls[0]["skip_head"]
+
+
+def test_stage_times_recorded_when_enabled(engine):
+    engine.time_stages = True
+
+    engine.convert(np.zeros(12000, dtype=np.float32), tail=4000)
+
+    assert set(engine.stage_seconds) == {"encode", "index", "pitch", "synth"}
+    assert all(value >= 0 for value in engine.stage_seconds.values())
+
+
+def test_stage_times_empty_when_disabled(engine):
+    engine.convert(np.zeros(12000, dtype=np.float32))
+
+    assert engine.stage_seconds == {}
+
+
+@pytest.fixture
+def index_loads(monkeypatch):
+    calls = []
+
+    def fake_load_index(path):
+        calls.append(path)
+        return None, None
+
+    monkeypatch.setattr(rvc_engine, "_load_index", fake_load_index)
+    return calls
+
+
+def test_index_not_loaded_while_index_is_off(v2_profile, index_loads):
+    instance = _engine()
+    instance.index_rate = 0
+    instance.load(VoiceProfile("v2", v2_profile.model_path, Path("voice.index")))
+
+    instance.convert(np.zeros(12000, dtype=np.float32))
+
+    assert index_loads == []
+
+
+def test_index_loaded_once_when_turned_on_later(v2_profile, index_loads):
+    instance = _engine()
+    instance.index_rate = 0
+    instance.load(VoiceProfile("v2", v2_profile.model_path, Path("voice.index")))
+    instance.index_rate = 0.5
+
+    instance.convert(np.zeros(12000, dtype=np.float32))
+    instance.convert(np.zeros(12000, dtype=np.float32))
+
+    assert index_loads == [Path("voice.index")]
+
+
+def test_index_loaded_with_voice_when_index_is_on(v2_profile, index_loads):
+    instance = _engine()
+    instance.load(VoiceProfile("v2", v2_profile.model_path, Path("voice.index")))
+
+    assert index_loads == [Path("voice.index")]
+
+
+@pytest.fixture(scope="module")
+def tiny_contentvec(tmp_path_factory):
+    from transformers import HubertConfig, HubertModel
+
+    folder = tmp_path_factory.mktemp("contentvec")
+    config = HubertConfig(
+        hidden_size=32,
+        num_hidden_layers=12,
+        num_attention_heads=2,
+        intermediate_size=64,
+        conv_dim=(16,) * 7,
+        num_conv_pos_embeddings=16,
+        num_conv_pos_embedding_groups=2,
+        classifier_proj_size=8,
+    )
+    config.to_json_file(str(folder / "config.json"))
+    torch.manual_seed(0)
+    weights = HubertModel(config).state_dict()
+    weights["final_proj.weight"] = torch.randn(8, 32)
+    weights["final_proj.bias"] = torch.randn(8)
+    torch.save(weights, folder / "pytorch_model.bin")
+    return folder
+
+
+def test_v1_encoder_skips_layers_but_matches_layer_nine(tiny_contentvec):
+    encoder = rvc_engine._HubertContentEncoder(tiny_contentvec, torch.device("cpu"))
+    audio = torch.randn(1, 8000)
+
+    with torch.inference_mode():
+        full = encoder._model(audio, output_hidden_states=True)
+        expected = encoder._model.final_proj(full.hidden_states[rvc_engine.V1_FEATURE_LAYER])
+        got = encoder.encode(audio, "v1")
+
+    assert torch.allclose(got, expected, atol=1e-5)
+    assert len(encoder._model.encoder.layers) == 12
+
+
+def test_v2_encoder_returns_last_hidden_state(tiny_contentvec):
+    encoder = rvc_engine._HubertContentEncoder(tiny_contentvec, torch.device("cpu"))
+    audio = torch.randn(1, 8000)
+
+    with torch.inference_mode():
+        expected = encoder._model(audio).last_hidden_state
+        got = encoder.encode(audio, "v2")
+
+    assert torch.allclose(got, expected)

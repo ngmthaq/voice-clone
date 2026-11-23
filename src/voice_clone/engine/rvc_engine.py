@@ -1,6 +1,7 @@
 import logging
 import math
 import threading
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Protocol
@@ -55,8 +56,10 @@ class _LoadedVoice:
     target_rate: int
     version: str
     has_pitch: bool
-    index: Any | None
-    index_vectors: np.ndarray | None
+    index_path: Path | None
+    index: Any | None = None
+    index_vectors: np.ndarray | None = None
+    index_loaded: bool = False
 
 
 class RvcEngine:
@@ -71,11 +74,18 @@ class RvcEngine:
         device: torch.device | None = None,
         content_encoder: ContentEncoder | None = None,
         pitch_extractor: PitchExtractor | None = None,
+        cpu_threads: int = 0,
     ) -> None:
         self._base_models = base_models
         self._device = device if device is not None else _default_device()
         if self._device.type == "cuda":
             torch.backends.cudnn.benchmark = True
+        elif self._device.type == "cpu":
+            from voice_clone.engine.device import configure_cpu_threads
+
+            configure_cpu_threads(cpu_threads)
+        self.time_stages = False
+        self.stage_seconds: dict[str, float] = {}
         self._content_encoder = content_encoder
         self._pitch_extractor = pitch_extractor
         self._voice: _LoadedVoice | None = None
@@ -98,6 +108,8 @@ class RvcEngine:
         with self._lock:
             self._ensure_base_encoders()
             voice = _load_voice(profile, self._device)
+            if self.index_rate > 0:
+                _ensure_index(voice)
             self._voice = voice
         logger.info(
             "Loaded voice %s (%s, %d Hz, f0=%s, index=%s) on %s",
@@ -105,7 +117,7 @@ class RvcEngine:
             voice.version,
             voice.target_rate,
             voice.has_pitch,
-            voice.index is not None,
+            voice.index_path is not None,
             self._device,
         )
 
@@ -135,16 +147,20 @@ class RvcEngine:
         """Return the converted audio and the part of `audio` it covers."""
         assert self._content_encoder is not None and self._pitch_extractor is not None
         padded = _pad_tail(audio, CONTENT_PAD)
+        clock = _StageClock(self._device, self.time_stages)
         with torch.inference_mode():
             tensor = torch.from_numpy(padded).to(self._device).unsqueeze(0)
             live = self._content_encoder.encode(tensor, voice.version).float()
+            clock.lap("encode")
             feats = self._blend_index(voice, live)
+            clock.lap("index")
             feats = _upsample_frames(feats)
             live = _upsample_frames(live)
             frames = feats.shape[1]
             net_args: tuple[torch.Tensor, ...] = ()
             if voice.has_pitch:
                 pitch, pitchf = self._pitch_tensors(padded, frames)
+                clock.lap("pitch")
                 frames = min(frames, pitch.shape[1])
                 feats, pitch, pitchf = feats[:, :frames], pitch[:, :frames], pitchf[:, :frames]
                 feats = self._protect_consonants(feats, live[:, :frames], pitchf)
@@ -153,14 +169,19 @@ class RvcEngine:
             sid = torch.zeros(1, dtype=torch.long, device=self._device)
             if tail is None:
                 output = voice.net_g.infer(feats, lengths, *net_args, sid)[0]
-                return output.squeeze().float().cpu().numpy(), audio
+                decoded = output.squeeze().float().cpu().numpy()
+                clock.lap("synth")
+                self.stage_seconds = clock.stages
+                return decoded, audio
             start = len(audio) - tail
             first = max(0, start // PITCH_HOP - DECODE_MARGIN_FRAMES)
             last = min(frames, math.ceil(len(audio) / PITCH_HOP))
             output = voice.net_g.infer(
                 feats, lengths, *net_args, sid, skip_head=first, return_length=last - first
             )[0]
-        decoded = output.squeeze().float().cpu().numpy()
+            decoded = output.squeeze().float().cpu().numpy()
+            clock.lap("synth")
+        self.stage_seconds = clock.stages
         offset = round((start - first * PITCH_HOP) * voice.target_rate / INPUT_SAMPLE_RATE)
         return decoded[offset:], audio[start:]
 
@@ -190,7 +211,10 @@ class RvcEngine:
         return pitch, pitchf
 
     def _blend_index(self, voice: _LoadedVoice, feats: torch.Tensor) -> torch.Tensor:
-        if voice.index is None or voice.index_vectors is None or self.index_rate <= 0:
+        if self.index_rate <= 0 or voice.index_path is None:
+            return feats
+        _ensure_index(voice)
+        if voice.index is None or voice.index_vectors is None:
             return feats
         query = np.ascontiguousarray(feats[0].cpu().numpy(), dtype=np.float32)
         if query.shape[1] != voice.index_vectors.shape[1]:
@@ -240,13 +264,28 @@ class _HubertContentEncoder:
         if unexpected:
             logger.debug("ContentVec unused weights: %s", unexpected)
         self._model = model.float().eval().to(device)
+        self._all_layers = self._model.encoder.layers
+        # v1 voices use layer 9. Without the stable layer norm, the encoder output after
+        # 9 layers is exactly that hidden state, so the last 3 layers can be skipped.
+        self._v1_layers = (
+            None
+            if config.do_stable_layer_norm
+            else nn.ModuleList(list(self._all_layers)[:V1_FEATURE_LAYER])
+        )
 
     def encode(self, audio: torch.Tensor, version: str) -> torch.Tensor:
         audio = audio.float()
-        outputs = self._model(audio, output_hidden_states=True)
-        if version == "v1":
+        if version != "v1":
+            return self._model(audio).last_hidden_state
+        if self._v1_layers is None:
+            outputs = self._model(audio, output_hidden_states=True)
             return self._model.final_proj(outputs.hidden_states[V1_FEATURE_LAYER])
-        return outputs.last_hidden_state
+        self._model.encoder.layers = self._v1_layers
+        try:
+            hidden = self._model(audio).last_hidden_state
+        finally:
+            self._model.encoder.layers = self._all_layers
+        return self._model.final_proj(hidden)
 
 
 class _RmvpePitchExtractor:
@@ -317,8 +356,15 @@ def _load_voice(profile: VoiceProfile, device: torch.device) -> _LoadedVoice:
     if hasattr(net_g, "enc_q"):
         del net_g.enc_q
     net_g = net_g.float().eval().to(device)
-    index, index_vectors = _load_index(profile.index_path)
-    return _LoadedVoice(net_g, target_rate, version, has_pitch, index, index_vectors)
+    return _LoadedVoice(net_g, target_rate, version, has_pitch, profile.index_path)
+
+
+def _ensure_index(voice: _LoadedVoice) -> None:
+    """Load the index the first time it is needed, so voices used without it save RAM."""
+    if voice.index_loaded:
+        return
+    voice.index, voice.index_vectors = _load_index(voice.index_path)
+    voice.index_loaded = True
 
 
 def _synthesizer_class(version: str, has_pitch: bool) -> type[nn.Module]:
@@ -414,3 +460,24 @@ def _single_thread_faiss() -> None:
     import faiss
 
     faiss.omp_set_num_threads(1)
+
+
+class _StageClock:
+    """Times each step of a conversion when enabled; GPU work is waited for first."""
+
+    def __init__(self, device: torch.device, enabled: bool) -> None:
+        self._device = device
+        self._enabled = enabled
+        self.stages: dict[str, float] = {}
+        self._last = time.perf_counter() if enabled else 0.0
+
+    def lap(self, name: str) -> None:
+        if not self._enabled:
+            return
+        if self._device.type == "cuda":
+            torch.cuda.synchronize(self._device)
+        elif self._device.type == "mps":
+            torch.mps.synchronize()
+        now = time.perf_counter()
+        self.stages[name] = now - self._last
+        self._last = now

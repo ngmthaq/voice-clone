@@ -19,6 +19,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     setup_logging()
     if args.command == "train":
         return _run_train(args)
+    if args.command == "bench":
+        return _run_bench_command(args)
     from voice_clone.app import RESTART, VoiceCloneApp
 
     while VoiceCloneApp().run() == RESTART:
@@ -77,7 +79,81 @@ def _build_parser() -> argparse.ArgumentParser:
     train.add_argument(
         "--force", action="store_true", help="Replace an existing voice with the same name."
     )
+    from voice_clone.config import PERFORMANCE_PRESETS
+
+    bench = commands.add_parser(
+        "bench",
+        help="Measure how fast this computer converts a voice with each Performance preset.",
+        description=(
+            "Converts made-up speech (no microphone needed) and shows the load for each "
+            "preset. Load under 1.0 means it keeps up; aim for under about 0.7."
+        ),
+    )
+    bench.add_argument(
+        "--preset",
+        choices=tuple(PERFORMANCE_PRESETS),
+        action="append",
+        help="Preset to measure; repeat for more (default: all).",
+    )
+    bench.add_argument("--voice", help="Voice to use (default: the saved voice, or the first).")
+    bench.add_argument(
+        "--seconds", type=float, default=10.0, help="Audio per preset (default: 10)."
+    )
+    bench.add_argument("--cpu", action="store_true", help="Run on the CPU even if a GPU exists.")
+    bench.add_argument(
+        "--threads", type=int, default=None, help="CPU threads (default: the saved setting)."
+    )
     return parser
+
+
+def _run_bench_command(args: argparse.Namespace) -> int:
+    import torch
+
+    from voice_clone.bench import apply_engine_options, run_bench
+    from voice_clone.config import PERFORMANCE_PRESETS, load_settings
+    from voice_clone.engine import RvcEngine, base_models_present, select_torch_device
+    from voice_clone.engine.download import base_model_paths
+    from voice_clone.paths import models_dir
+    from voice_clone.profiles.discovery import discover_profiles
+
+    settings = load_settings()
+    if not base_models_present(models_dir()):
+        print("Base models are missing. Open the app and choose Check setup first.")
+        return EXIT_ERROR
+    profiles = discover_profiles(voices_dir())
+    wanted = args.voice or settings.profile
+    profile = next((p for p in profiles if p.name == wanted), None)
+    if profile is None and args.voice is None and profiles:
+        profile = profiles[0]
+    if profile is None:
+        print(f"Voice not found: {wanted}" if wanted else "No voices found.")
+        return EXIT_ERROR
+
+    device = torch.device("cpu") if args.cpu else select_torch_device()
+    threads = settings.cpu_threads if args.threads is None else args.threads
+    engine = RvcEngine(base_model_paths(models_dir()), device, cpu_threads=threads)
+    presets = args.preset or list(PERFORMANCE_PRESETS)
+    print(f"Voice: {profile.name}   Device: {device}", end="")
+    print(f"   CPU threads: {torch.get_num_threads()}" if device.type == "cpu" else "")
+    print(f"{'Preset':<10}{'Block':>7}{'Load':>7}{'p95':>7}{'Slow':>6}   Stage ms per hop")
+    try:
+        for name in presets:
+            values = PERFORMANCE_PRESETS[name][1]
+            apply_engine_options(engine, values)
+            if engine.output_sample_rate == 0:
+                engine.load(profile)
+            result = run_bench(engine, values, args.seconds)
+            stages = "  ".join(f"{k} {v:.0f}" for k, v in result.stage_ms.items())
+            print(
+                f"{name:<10}{result.block_ms:>5}ms{result.mean_load:>7.2f}{result.p95_load:>7.2f}"
+                f"{result.slow_blocks:>6}   {stages}"
+            )
+    except VoiceCloneError as exc:
+        print(f"Error: {exc}")
+        return EXIT_ERROR
+    except KeyboardInterrupt:
+        return EXIT_INTERRUPTED
+    return 0
 
 
 def _run_train(args: argparse.Namespace) -> int:

@@ -528,11 +528,11 @@ class MainScreen(Screen[None]):
     ) -> None:
         try:
             engine = self._get_engine()
+            engine.set_pitch(pitch)
+            self._apply_voice_options(engine=engine)
             if self._loaded_profile != profile.name:
                 engine.load(profile)
                 self._loaded_profile = profile.name
-            engine.set_pitch(pitch)
-            self._apply_voice_options(engine=engine)
             pipeline = ConversionPipeline(
                 engine,
                 input_device,
@@ -570,7 +570,9 @@ class MainScreen(Screen[None]):
 
     def _get_engine(self) -> RvcEngine:
         if self._engine is None:
-            self._engine = RvcEngine(base_model_paths(models_dir()))
+            self._engine = RvcEngine(
+                base_model_paths(models_dir()), cpu_threads=self._settings.cpu_threads
+            )
         return self._engine
 
     def _start_succeeded(self, pipeline: ConversionPipeline) -> None:

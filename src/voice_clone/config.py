@@ -29,6 +29,7 @@ class Settings(BaseModel):
     block_ms: int = Field(400, ge=100, le=1000)
     crossfade_ms: int = Field(80, ge=10, le=200)
     hum_filter_hz: int = Field(90, ge=0, le=200)
+    cpu_threads: int = Field(0, ge=0, le=256)
     train_name: str = "my-voice"
     train_epochs: int = Field(200, ge=1, le=10000)
     train_batch_size: int = Field(8, ge=1, le=50)

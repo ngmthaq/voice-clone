@@ -81,6 +81,18 @@ The voice must be converted faster than you speak. On a weak graphics card (for 
 
 Some delay always remains: the voice is converted in blocks (0.4 seconds by default), so expect about 0.5 to 1 second. A smaller **Block size** lowers it if the computer is fast enough.
 
+### Measure the speed
+
+To see which preset your computer can run, without a microphone:
+
+```bash
+python -m voice_clone bench
+```
+
+It converts made-up speech with each preset and prints the **Load** (time to convert a block ÷ block length). Under 1.0 keeps up; pick the heaviest preset with a Load under about 0.7, so there is room for pauses in your computer's other work. `p95` is the load of the slowest blocks, and `Slow` counts blocks that took longer than real time. The last column shows where the time goes (encode, index, pitch, synth). Add `--cpu` to test without the graphics card, or `--preset light` to test one preset.
+
+On the CPU, the app leaves one core free for the audio and the screen. To set the number of CPU threads yourself, add `cpu_threads = 4` (for example) to the settings file while the app is closed; `0` means automatic. The settings file is `~/Library/Application Support/voice-clone/settings.toml` on macOS and `%LOCALAPPDATA%\voice-clone\voice-clone\settings.toml` on Windows.
+
 ## Logs
 
 The app never prints to the terminal. Logs are written to the user log folder:

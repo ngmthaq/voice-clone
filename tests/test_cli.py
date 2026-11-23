@@ -98,3 +98,15 @@ def test_r_key_exits_with_restart() -> None:
         return app.return_value
 
     assert asyncio.run(scenario()) == RESTART
+
+
+def test_bench_without_base_models_returns_error(monkeypatch: pytest.MonkeyPatch, tmp_path) -> None:
+    monkeypatch.setattr("voice_clone.paths.models_dir", lambda: tmp_path)
+    monkeypatch.setattr("voice_clone.engine.base_models_present", lambda path: False)
+
+    assert cli.main(["bench", "--cpu"]) == cli.EXIT_ERROR
+
+
+def test_bench_rejects_unknown_preset() -> None:
+    with pytest.raises(SystemExit):
+        cli.main(["bench", "--preset", "turbo"])
