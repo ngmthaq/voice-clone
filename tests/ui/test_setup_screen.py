@@ -255,7 +255,7 @@ def test_install_applio_is_hidden_without_git(fake_applio, monkeypatch):
 
 def test_measure_speed_hidden_until_models_are_there(environment):
     async def body(app, pilot):
-        return app.screen.query_one("#measure-speed").display
+        return app.screen.query_one("#performance-section").display
 
     assert _run(body) is False
 
@@ -274,7 +274,7 @@ def test_measure_speed_saves_the_best_preset_and_says_so(environment, monkeypatc
 
     async def body(app, pilot):
         button = app.screen.query_one("#measure-speed", Button)
-        shown = button.display
+        shown = app.screen.query_one("#performance-section").display
         button.press()
         await _settle(app, pilot)
         return shown, _status(app), button.disabled

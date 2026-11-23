@@ -7,7 +7,7 @@ from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.containers import Vertical, VerticalScroll
 from textual.screen import Screen
-from textual.widgets import Button, Footer, Header, Label, ProgressBar, RichLog, Static
+from textual.widgets import Button, Footer, Header, Label, ProgressBar, RichLog, Rule, Static
 
 from voice_clone import bench
 from voice_clone.config import PERFORMANCE_PRESETS
@@ -65,9 +65,12 @@ class SetupScreen(Screen[None]):
                 yield Button("Download base models", id="download-models", variant="primary")
                 yield ProgressBar(total=1.0, show_eta=False, id="models-progress")
                 yield Button("Install Applio (several GB)", id="install-applio", variant="primary")
-                yield Button("Measure speed", id="measure-speed")
-                yield Static(MEASURE_HINT, classes="hint", id="measure-hint")
                 yield Button("Check again", id="check-again")
+                with Vertical(id="performance-section"):
+                    yield Rule()
+                    yield Label("Performance", classes="section-title")
+                    yield Static(MEASURE_HINT, classes="hint")
+                    yield Button("Measure speed", id="measure-speed")
                 yield Static("", id="setup-status")
                 yield RichLog(max_lines=MAX_LOG_LINES, min_width=20, wrap=True, id="applio-log")
         yield Footer()
@@ -76,8 +79,7 @@ class SetupScreen(Screen[None]):
         self.query_one("#models-progress", ProgressBar).display = False
         self.query_one("#download-models", Button).display = False
         self.query_one("#install-applio", Button).display = False
-        self.query_one("#measure-speed", Button).display = False
-        self.query_one("#measure-hint", Static).display = False
+        self.query_one("#performance-section", Vertical).display = False
         self.query_one("#applio-log", RichLog).display = False
         self.set_interval(LOG_REFRESH_SECONDS, self._drain_applio_events)
         self._run_checks()
@@ -295,8 +297,7 @@ class SetupScreen(Screen[None]):
             download.label = f"Download base models (about {models.download_mb} MB)"
         self.query_one("#install-applio", Button).display = any(c.key == APPLIO_KEY for c in checks)
         can_measure = models is None and bool(facts.voices)
-        self.query_one("#measure-speed", Button).display = can_measure
-        self.query_one("#measure-hint", Static).display = can_measure
+        self.query_one("#performance-section", Vertical).display = can_measure
 
         changer_problems = [c for c in checks if c.group == VOICE_CHANGER and c.status == MISSING]
         training_problems = [c for c in checks if c.group == TRAINING and c.status == MISSING]

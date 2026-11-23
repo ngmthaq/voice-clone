@@ -75,9 +75,23 @@ HomeScreen {
 
 #download-models,
 #install-applio,
+#measure-speed,
 #check-again {
     width: 100%;
     margin-top: 1;
+}
+
+#performance-section {
+    height: auto;
+    margin-top: 1;
+}
+
+#performance-section > Rule {
+    margin: 0;
+}
+
+#performance-section > .section-title {
+    margin: 0 0 1 0;
 }
 
 #models-progress {
