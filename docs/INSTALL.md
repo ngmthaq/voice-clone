@@ -7,6 +7,8 @@ How to set up voice-clone on macOS or Windows. When you are done, go to [USAGE.m
 To use the voice changer:
 
 - **Python 3.12**, for the app and for training: from https://www.python.org/downloads/, or `brew install python@3.12` on macOS. Check it with `python3.12 --version` (macOS) or `py -3.12 --version` (Windows).
+
+  **Windows:** `py` comes only with the installer from python.org. If you installed Python from the Microsoft Store, `py` is "not recognized": type `python3.12` wherever these docs say `py -3.12` (for example `python3.12 --version` and `python3.12 -m venv .venv`).
 - A virtual audio device:
   - macOS: BlackHole 2ch. Install with `brew install blackhole-2ch`.
   - Windows: VB-Audio Virtual Cable (VB-CABLE), from https://vb-audio.com/Cable/
@@ -48,7 +50,7 @@ nvidia-smi
 ### Windows with an NVIDIA card (PowerShell)
 
 ```powershell
-py -3.12 -m venv .venv
+py -3.12 -m venv .venv    # Microsoft Store Python: python3.12 -m venv .venv
 .venv\Scripts\Activate.ps1
 pip install torch==2.5.1 torchaudio==2.5.1 --index-url https://download.pytorch.org/whl/cu124
 pip install -e .
@@ -67,7 +69,7 @@ It must print `True`. If it prints `False`, update the NVIDIA driver and check a
 ### Windows without an NVIDIA card (PowerShell)
 
 ```powershell
-py -3.12 -m venv .venv
+py -3.12 -m venv .venv    # Microsoft Store Python: python3.12 -m venv .venv
 .venv\Scripts\Activate.ps1
 pip install -e .
 ```

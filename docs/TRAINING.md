@@ -12,7 +12,7 @@ You need:
 
 | Tool | Check | Install |
 | --- | --- | --- |
-| Python 3.12 | macOS: `python3.12 --version` · Windows: `py -3.12 --version` | https://www.python.org/downloads/ (macOS: or `brew install python@3.12`) |
+| Python 3.12 | macOS: `python3.12 --version` · Windows: `py -3.12 --version` (Microsoft Store Python: `python3.12 --version`) | https://www.python.org/downloads/ (macOS: or `brew install python@3.12`) |
 | `git` | `git --version` | macOS: `xcode-select --install` · Windows: `winget install Git.Git` |
 | `ffmpeg` | `ffmpeg -version` | macOS: `brew install ffmpeg` · Windows: `winget install ffmpeg` |
 
