@@ -739,7 +739,6 @@ FIRST_START_CPU_PRESET = "minimal"
 
 
 def _first_start_settings() -> Settings | None:
-    """On a fresh install without a usable GPU, start with the lightest preset."""
     if settings_saved() or select_torch_device().type != "cpu":
         return None
     logger.info("No GPU found: starting with the %s preset", FIRST_START_CPU_PRESET)

@@ -282,8 +282,6 @@ class _HubertContentEncoder:
         self._model = model.eval().to(device, dtype)
         self._dtype = dtype
         self._all_layers = self._model.encoder.layers
-        # v1 voices use layer 9. Without the stable layer norm, the encoder output after
-        # 9 layers is exactly that hidden state, so the last 3 layers can be skipped.
         self._v1_layers = (
             None
             if config.do_stable_layer_norm
@@ -319,8 +317,6 @@ class _RmvpePitchExtractor:
                 "Could not load the RMVPE pitch model. Delete the models folder and "
                 "download it again."
             ) from error
-        # The BiGRU steps through the frames one by one, which is about 20x slower on Apple
-        # GPUs than on the CPU. So on MPS only the convolutional part stays on the GPU.
         if recurrent_on_cpu is None:
             recurrent_on_cpu = device.type == "mps"
         self._recurrent_device = torch.device("cpu") if recurrent_on_cpu else None
@@ -341,7 +337,6 @@ class _RmvpePitchExtractor:
 def _rmvpe_hidden(
     model: nn.Module, mel: torch.Tensor, recurrent_device: torch.device
 ) -> torch.Tensor:
-    """RMVPE's network, with the recurrent part (`fc`) run on `recurrent_device`."""
     frames = mel.shape[-1]
     pad = RMVPE_FRAME_MULTIPLE * math.ceil(frames / RMVPE_FRAME_MULTIPLE) - frames
     padded = F.pad(mel, (0, pad))
@@ -407,7 +402,6 @@ def _load_voice(
 
 
 def _ensure_index(voice: _LoadedVoice) -> None:
-    """Load the index the first time it is needed, so voices used without it save RAM."""
     if voice.index_loaded:
         return
     voice.index, voice.index_vectors = _load_index(voice.index_path)
@@ -510,8 +504,6 @@ def _single_thread_faiss() -> None:
 
 
 class _StageClock:
-    """Times each step of a conversion when enabled; GPU work is waited for first."""
-
     def __init__(self, device: torch.device, enabled: bool) -> None:
         self._device = device
         self._enabled = enabled

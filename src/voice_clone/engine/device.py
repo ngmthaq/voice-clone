@@ -18,12 +18,10 @@ def select_torch_device() -> torch.device:
 
 
 def auto_cpu_threads(default: int) -> int:
-    """Leave one core for the audio callbacks and the UI when there are cores to spare."""
     return default - 1 if default >= 3 else max(1, default)
 
 
 def configure_cpu_threads(threads: int = 0) -> int:
-    """Set how many threads torch uses on the CPU. 0 picks a number automatically."""
     global _threads_configured
     count = int(threads) if threads > 0 else auto_cpu_threads(_TORCH_DEFAULT_THREADS)
     torch.set_num_threads(count)
@@ -42,12 +40,6 @@ HALF_MIN_CUDA_MAJOR = 7
 
 
 def use_half_precision(device: torch.device, precision: str = "auto") -> bool:
-    """Whether to run the models in fp16.
-
-    `auto` picks fp16 only on NVIDIA cards from the GeForce 16/20 series on (compute
-    capability 7.0+): older cards (GeForce 10 series and before) run fp16 slowly. `fp16`
-    also works on Apple GPUs. The CPU always uses fp32.
-    """
     if precision not in PRECISIONS:
         raise ValueError(f"precision must be one of {PRECISIONS}")
     if precision == "fp32" or device.type == "cpu":

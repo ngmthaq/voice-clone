@@ -38,7 +38,7 @@ LOG_REFRESH_SECONDS = 0.2
 MAX_LOG_LINES = 2000
 MEASURE_HINT = (
     "Converts made-up speech with each Performance preset and picks the best one this "
-    "computer keeps up with. Takes up to a minute."
+    "computer keeps up with, up to High. Takes up to a minute."
 )
 
 

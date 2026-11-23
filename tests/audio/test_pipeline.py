@@ -6,7 +6,7 @@ import pytest
 import voice_clone.audio.pipeline as pipeline_module
 from tests.conftest import FakeEngine
 from voice_clone.audio.devices import AudioDevice
-from voice_clone.audio.pipeline import ConversionPipeline
+from voice_clone.audio.pipeline import SETTLE_BLOCKS, ConversionPipeline
 from voice_clone.errors import DeviceNotFoundError
 
 
@@ -338,21 +338,47 @@ def test_full_queue_drops_oldest_block_and_keeps_newest(fake_engine):
 
 
 def test_worker_caps_output_backlog_and_measures_load(fake_engine, fake_sd):
-    levels = threading.Event()
-    pipeline = _make(fake_engine, on_levels=lambda i, o: levels.set())
+    blocks = threading.Semaphore(0)
+    pipeline = _make(fake_engine, on_levels=lambda i, o: blocks.release())
     pipeline._ring.write(np.ones(pipeline._output_frames * 3, dtype=np.float32))
     pipeline.start()
     try:
         pipeline._ring.write(np.ones(pipeline._output_frames * 3, dtype=np.float32))
-        FakeStream.instances[0].callback(
-            np.full((19200, 1), 0.1, dtype=np.float32), 19200, None, None
-        )
-        assert levels.wait(timeout=5)
+        for _ in range(SETTLE_BLOCKS + 1):
+            FakeStream.instances[0].callback(
+                np.full((19200, 1), 0.1, dtype=np.float32), 19200, None, None
+            )
+            assert blocks.acquire(timeout=5)
 
         assert pipeline._ring.available <= pipeline._output_frames * 2
         assert pipeline.load > 0
     finally:
         pipeline.stop()
+
+
+def test_first_blocks_after_start_do_not_count_as_load(fake_engine):
+    pipeline = _make(fake_engine, block_ms=400)
+    slow_start = [1.2] * SETTLE_BLOCKS
+
+    for seconds in slow_start:
+        pipeline._update_load(seconds)
+    settled_load = pipeline.load
+    pipeline._update_load(0.2)
+
+    assert settled_load == 0.0
+    assert pipeline.load == pytest.approx(0.5)
+
+
+def test_start_waits_for_settling_again(fake_engine, fake_sd):
+    pipeline = _make(fake_engine, block_ms=400)
+    for _ in range(SETTLE_BLOCKS + 1):
+        pipeline._update_load(0.2)
+    pipeline.start()
+    pipeline.stop()
+
+    pipeline._update_load(1.2)
+
+    assert pipeline.load == 0.0
 
 
 def test_hum_filter_zero_turns_it_off(fake_engine):

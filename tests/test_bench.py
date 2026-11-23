@@ -131,3 +131,27 @@ def test_measure_and_save_needs_a_voice(measure_environment, monkeypatch, tmp_pa
 
     with pytest.raises(ProfileError):
         bench.measure_and_save()
+
+
+def test_auto_presets_stop_at_high():
+    assert list(bench.auto_presets(PERFORMANCE_PRESETS)) == [
+        "minimal",
+        "light",
+        "balanced",
+        "high",
+    ]
+
+
+def test_measure_and_save_never_picks_ultra(measure_environment, monkeypatch):
+    from voice_clone.config import load_settings
+
+    measured = _fake_loads(
+        monkeypatch,
+        {"minimal": 0.1, "light": 0.1, "balanced": 0.1, "high": 0.1, "ultra": 0.1},
+    )
+
+    best, _ = bench.measure_and_save()
+
+    assert best == "high"
+    assert "ultra" not in measured
+    assert load_settings().block_ms == 300

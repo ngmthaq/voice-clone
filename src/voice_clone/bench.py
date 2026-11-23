@@ -14,6 +14,7 @@ QUIET_LEVEL = 0.003
 LOUD_LEVEL = 0.2
 WARM_UP_BLOCKS = 1
 TARGET_LOAD = 0.7
+HEAVIEST_AUTO_PRESET = "high"
 MEASURE_SECONDS = 4.0
 
 
@@ -37,10 +38,6 @@ class BenchResult:
 
 
 def speech_like(seconds: float, rate: int = BENCH_SAMPLE_RATE, seed: int = 0) -> np.ndarray:
-    """A voiced tone with a gliding pitch, broken into syllables with quiet gaps.
-
-    The gaps let the noise gate learn a floor and open on the loud parts, like real speech.
-    """
     rng = np.random.default_rng(seed)
     t = np.arange(int(seconds * rate)) / rate
     pitch = 160 + 40 * np.sin(2 * np.pi * 0.5 * t)
@@ -60,7 +57,6 @@ def apply_engine_options(engine: object, values: Mapping[str, float]) -> None:
 
 
 def run_bench(engine: object, values: Mapping[str, float], seconds: float) -> BenchResult:
-    """Feed synthetic speech through the conversion pipeline (no audio devices) and time it."""
     device = AudioDevice(-1, "bench", 1, 2, BENCH_SAMPLE_RATE)
     block_ms = int(values["block_ms"])
     pipeline = ConversionPipeline(
@@ -109,8 +105,18 @@ def run_bench(engine: object, values: Mapping[str, float], seconds: float) -> Be
     return BenchResult(block_ms, loads, stage_ms)
 
 
+def auto_presets(
+    presets: Mapping[str, tuple[str, Mapping[str, float]]],
+) -> dict[str, Mapping[str, float]]:
+    chosen: dict[str, Mapping[str, float]] = {}
+    for name, (_, values) in presets.items():
+        chosen[name] = values
+        if name == HEAVIEST_AUTO_PRESET:
+            break
+    return chosen
+
+
 def fits(result: BenchResult) -> bool:
-    """Even the slow blocks leave room for the rest of the computer's work."""
     return result.p95_load < TARGET_LOAD
 
 
@@ -120,11 +126,6 @@ def pick_preset(
     seconds: float = MEASURE_SECONDS,
     on_result: Callable[[str, BenchResult], None] | None = None,
 ) -> tuple[str | None, dict[str, BenchResult]]:
-    """Measure presets from lightest to heaviest and return the heaviest that fits.
-
-    Stops at the first preset that does not fit, since heavier ones will not fit either.
-    Returns None when even the lightest is too slow.
-    """
     best: str | None = None
     results: dict[str, BenchResult] = {}
     for name, values in presets.items():
@@ -142,7 +143,6 @@ def pick_preset(
 def measure_and_save(
     on_result: Callable[[str, BenchResult], None] | None = None,
 ) -> tuple[str | None, dict[str, BenchResult]]:
-    """Find the heaviest preset this computer keeps up with, and save it as the settings."""
     from voice_clone.config import PERFORMANCE_PRESETS, apply_preset, load_settings, save_settings
     from voice_clone.engine import RvcEngine
     from voice_clone.engine.download import base_model_paths
@@ -157,7 +157,7 @@ def measure_and_save(
         profile = profiles[0]
     if profile is None:
         raise ProfileError("Add or train a voice first: the speed test needs one.")
-    presets = {name: values for name, (_, values) in PERFORMANCE_PRESETS.items()}
+    presets = auto_presets(PERFORMANCE_PRESETS)
     engine = RvcEngine(
         base_model_paths(models_dir()),
         cpu_threads=settings.cpu_threads,

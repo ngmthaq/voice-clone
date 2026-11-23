@@ -25,6 +25,7 @@ QUEUE_BLOCKS = 2
 RING_BLOCKS = 4
 MAX_OUTPUT_BACKLOG_BLOCKS = 2
 LOAD_SMOOTHING = 0.3
+SETTLE_BLOCKS = 2
 FIFO_PRIME_MS = 50
 OUTPUT_PRIME_MS = 40
 POLL_SECONDS = 0.1
@@ -82,6 +83,7 @@ class ConversionPipeline:
         self.dropped_blocks = 0
         self._reported_drops = 0
         self.load = 0.0
+        self._settle_left = SETTLE_BLOCKS
 
         self._reset_state()
 
@@ -104,6 +106,7 @@ class ConversionPipeline:
         self.dropped_blocks = 0
         self._reported_drops = 0
         self.load = 0.0
+        self._settle_left = SETTLE_BLOCKS
         self._stop_event.clear()
         self._open_streams()
         self._worker = threading.Thread(
@@ -288,6 +291,9 @@ class ConversionPipeline:
         outdata[:] = self._ring.read(frames)[:, None]
 
     def _update_load(self, seconds: float) -> None:
+        if self._settle_left > 0:
+            self._settle_left -= 1
+            return
         ratio = seconds / self._block_seconds
         self.load = self.load + LOAD_SMOOTHING * (ratio - self.load) if self.load else ratio
 

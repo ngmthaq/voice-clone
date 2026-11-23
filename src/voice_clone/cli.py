@@ -115,7 +115,7 @@ def _build_parser() -> argparse.ArgumentParser:
 def _run_bench_command(args: argparse.Namespace) -> int:
     import torch
 
-    from voice_clone.bench import apply_engine_options, fits, run_bench
+    from voice_clone.bench import apply_engine_options, auto_presets, fits, run_bench
     from voice_clone.config import PERFORMANCE_PRESETS, load_settings
     from voice_clone.engine import RvcEngine, base_models_present, select_torch_device
     from voice_clone.engine.download import base_model_paths
@@ -153,7 +153,11 @@ def _run_bench_command(args: argparse.Namespace) -> int:
             if engine.output_sample_rate == 0:
                 engine.load(profile)
             result = run_bench(engine, values, args.seconds)
-            if fits(result) and len(fitting) == presets.index(name):
+            if (
+                fits(result)
+                and len(fitting) == presets.index(name)
+                and name in auto_presets(PERFORMANCE_PRESETS)
+            ):
                 fitting.append(name)
             stages = "  ".join(f"{k} {v:.0f}" for k, v in result.stage_ms.items())
             print(
@@ -166,7 +170,7 @@ def _run_bench_command(args: argparse.Namespace) -> int:
     except KeyboardInterrupt:
         return EXIT_INTERRUPTED
     if fitting:
-        print(f"Recommended: {fitting[-1]} (heaviest preset with p95 under 0.7)")
+        print(f"Recommended: {fitting[-1]} (heaviest preset up to High with p95 under 0.7)")
     else:
         print("None of these presets keeps up comfortably (p95 under 0.7).")
     return 0
