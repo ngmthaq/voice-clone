@@ -36,15 +36,12 @@ MAX_LOG_LINES = 2000
 
 
 class SetupScreen(Screen[None]):
-    """Checks that everything the app needs is installed; downloads base models and Applio."""
-
     SUB_TITLE = "Check setup"
     BINDINGS = [Binding("escape", "back", "Back")]
 
     def __init__(self) -> None:
         super().__init__()
         self._busy = False
-        # Applio install output, from the install thread to the UI: (kind, text).
         self._applio_events: deque[tuple[str, str]] = deque()
         self._applio_runner: StreamingRunner | None = None
 
@@ -73,7 +70,6 @@ class SetupScreen(Screen[None]):
         self._run_checks()
 
     def on_unmount(self) -> None:
-        # Quitting the app stops an install that is still running.
         if self._applio_runner is not None:
             self._applio_runner.stop()
 
@@ -109,7 +105,7 @@ class SetupScreen(Screen[None]):
             return
         self._set_busy(True)
         button = self.query_one("#install-applio", Button)
-        button.disabled = False  # it is the Stop button while installing
+        button.disabled = False
         button.label = "Stop install"
         button.variant = "error"
         log = self.query_one("#applio-log", RichLog)
@@ -125,7 +121,6 @@ class SetupScreen(Screen[None]):
 
     @work(thread=True, exclusive=True, group="applio-install")
     def _install_applio(self, runner: StreamingRunner) -> None:
-        # Talks to the UI only through self._applio_events, so it never waits on the UI.
         try:
             Applio(training_dir() / ".applio", runner=runner).ensure_installed(
                 report=lambda message: self._applio_events.append(("step", message))
@@ -175,7 +170,6 @@ class SetupScreen(Screen[None]):
 
     @work(thread=True, exclusive=True, group="setup-check")
     def _check(self) -> None:
-        # Loading torch and asking the audio system can take a few seconds.
         try:
             checks = evaluate(gather_facts())
         except Exception as exc:

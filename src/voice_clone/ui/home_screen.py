@@ -10,8 +10,6 @@ from voice_clone.ui.train_screen import TrainScreen
 
 
 class HomeScreen(Screen[None]):
-    """The first screen: choose to change your voice or to train a new one."""
-
     def compose(self) -> ComposeResult:
         yield Header()
         with Vertical(id="home"):

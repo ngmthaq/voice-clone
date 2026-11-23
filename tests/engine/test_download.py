@@ -59,7 +59,6 @@ def test_base_models_present_is_false_for_empty_folder(tmp_path):
 
 
 def test_progress_bars_use_a_thread_lock_inside_the_tui(tmp_path, fake_hub):
-    # A multiprocessing lock needs a real stderr, which the TUI does not have (Python 3.12).
     import threading
 
     import tqdm

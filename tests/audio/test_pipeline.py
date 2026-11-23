@@ -288,7 +288,7 @@ def test_dropped_blocks_are_logged_while_running(fake_engine, caplog):
 
 def test_set_context_ms_changes_engine_input_on_next_hop(fake_engine):
     pipeline = _make(fake_engine)
-    pipeline._gate.process = lambda hop: hop  # keep the gate open on steady test noise
+    pipeline._gate.process = lambda hop: hop
     for _ in range(5):
         pipeline.process_block(_block(pipeline, 48000))
 

@@ -1,9 +1,3 @@
-"""Checks that everything the app needs is in place, with a plain-words fix for each problem.
-
-gather_facts() looks at the computer (slow: it loads torch and asks the audio system).
-evaluate() turns those facts into checks, without side effects, so it is easy to test.
-"""
-
 import logging
 import platform as platform_module
 import shutil
@@ -23,7 +17,7 @@ WARNING = "warning"
 MISSING = "missing"
 INFO = "info"
 MODELS_KEY = "models"
-APPLIO_KEY = "applio"  # Applio can be installed now from the Check setup page
+APPLIO_KEY = "applio"
 SUPPORTED_PYTHON = (3, 12)
 CUDA_TORCH_INSTALL = (
     "pip install --force-reinstall torch==2.5.1 torchaudio==2.5.1 "
@@ -39,7 +33,7 @@ class Check:
     detail: str
     fix: str = ""
     key: str = ""
-    download_mb: int = 0  # for the models check: size of what is missing
+    download_mb: int = 0
 
 
 @dataclass
@@ -49,10 +43,10 @@ class Facts:
     python_version: tuple[int, int, int]
     models_dir: Path
     model_files: list[BaseModelFile]
-    input_devices: list[str] | None  # None: the audio system could not be read
+    input_devices: list[str] | None
     output_devices: list[str] | None
     audio_error: str = ""
-    compute: str = "cpu"  # cuda, mps or cpu
+    compute: str = "cpu"
     gpu_name: str = ""
     nvidia_driver: bool = False
     voices: list[str] = field(default_factory=list)
@@ -157,7 +151,6 @@ def _audio(facts: Facts) -> list[Check]:
                 "Check that the computer has sound devices, then press 'Check again'.",
             )
         ]
-    # BlackHole also shows up as an input; it is not a real microphone.
     microphones = [name for name in facts.input_devices if not _is_virtual_device(name)]
     if microphones:
         mic = Check(VOICE_CHANGER, "Microphone", OK, ", ".join(microphones))

@@ -4,15 +4,15 @@ import numpy as np
 
 FRAME_MS = 20
 MIN_THRESHOLD_DB = -55.0
-DIGITAL_SILENCE_DB = -90.0  # padding zeros, muted mics: not a real noise floor
-FLOOR_RISE_DB_PER_FRAME = 0.05  # about 2.5 dB per second: speech pauses pull it back down
+DIGITAL_SILENCE_DB = -90.0
+FLOOR_RISE_DB_PER_FRAME = 0.05
 
 
 @dataclass(frozen=True)
 class GateSettings:
-    hold_ms: int = 500  # stay open through short pauses between words
-    pre_open_ms: int = 100  # open before a word, so soft first sounds ("s", "f", "h") are kept
-    open_above_floor_db: float = 6.0  # how far above the background hiss speech must be
+    hold_ms: int = 500
+    pre_open_ms: int = 100
+    open_above_floor_db: float = 6.0
 
 
 class NoiseGate:
@@ -32,7 +32,6 @@ class NoiseGate:
         self.configure(settings or GateSettings())
 
     def configure(self, settings: GateSettings) -> None:
-        """Change the settings, also while running. The learned noise floor is kept."""
         self._hold_frames = settings.hold_ms // FRAME_MS
         self._pre_frames = settings.pre_open_ms // FRAME_MS
         self._open_above_db = settings.open_above_floor_db

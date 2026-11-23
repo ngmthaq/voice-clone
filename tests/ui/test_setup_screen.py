@@ -104,7 +104,6 @@ def test_download_fills_the_models_and_checks_again(environment, monkeypatch):
     button_shown, status = _run(body)
 
     assert not button_shown
-    # ffmpeg is still missing in this environment, which only matters for training.
     assert status == "The voice changer is ready. Training needs the items marked ✗."
 
 
@@ -222,7 +221,7 @@ def test_stop_install_applio(fake_applio):
         button.press()
         await pilot.pause()
         during = (str(button.label), button.disabled, app.screen.query_one("#check-again").disabled)
-        await pilot.press("escape")  # blocked while installing
+        await pilot.press("escape")
         await pilot.pause()
         still_here = isinstance(app.screen, SetupScreen)
         button.press()

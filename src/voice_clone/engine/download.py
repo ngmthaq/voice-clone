@@ -18,7 +18,6 @@ RMVPE_REPO = "lj1995/VoiceConversionWebUI"
 RMVPE_FILE = "rmvpe.pt"
 CONTENTVEC_DIRNAME = "content-vec-best"
 RMVPE_DIRNAME = "rmvpe"
-# Rough download sizes, shown before the download starts.
 CONTENTVEC_APPROX_MB = {"config.json": 1, "pytorch_model.bin": 378}
 RMVPE_APPROX_MB = 181
 
@@ -40,8 +39,6 @@ def base_model_paths(models_dir: Path) -> BaseModelPaths:
 
 @dataclass(frozen=True)
 class BaseModelFile:
-    """One file the voice changer needs, for showing what is downloaded."""
-
     name: str
     purpose: str
     path: Path
@@ -105,13 +102,6 @@ def ensure_base_models(
 
 
 def _quiet_progress_bars() -> None:
-    """Make huggingface_hub downloads safe to run inside the TUI.
-
-    The app shows its own progress, so hub progress bars are turned off. tqdm still
-    creates a multiprocessing lock, which on Python 3.12 starts a helper process that
-    needs a real stderr. While Textual owns the terminal, stderr has no file number and
-    the download fails with "bad value(s) in fds_to_keep". A thread lock avoids that.
-    """
     disable_progress_bars()
     tqdm.tqdm.set_lock(threading.RLock())
 

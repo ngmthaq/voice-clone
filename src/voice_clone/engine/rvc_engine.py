@@ -35,25 +35,18 @@ CONTENT_PAD = 320
 INDEX_NEIGHBOURS = 8
 V1_FEATURE_LAYER = 9
 PITCH_FRAME_MS = 10
-# Loudness envelope used to make the output follow the microphone: 40 ms windows every 10 ms.
 LOUDNESS_FRAME = 640
 LOUDNESS_HOP = 160
 LOUDNESS_FLOOR = 1e-3
-# When only the end of the audio is needed, decode this many extra 10 ms frames before it,
-# so the decoder's start-up edge falls outside the part that is kept.
 DECODE_MARGIN_FRAMES = 10
 
 
 class ContentEncoder(Protocol):
-    def encode(self, audio: torch.Tensor, version: str) -> torch.Tensor:
-        """Map (1, samples) 16 kHz audio to (1, frames, dim); dim is 256 for v1, 768 for v2."""
-        ...
+    def encode(self, audio: torch.Tensor, version: str) -> torch.Tensor: ...
 
 
 class PitchExtractor(Protocol):
-    def extract(self, audio: np.ndarray) -> np.ndarray:
-        """Map 16 kHz mono audio to f0 in Hz, one value per 10 ms (0 = unvoiced)."""
-        ...
+    def extract(self, audio: np.ndarray) -> np.ndarray: ...
 
 
 @dataclass
@@ -67,13 +60,9 @@ class _LoadedVoice:
 
 
 class RvcEngine:
-    # These can be changed while the engine runs; the next block uses the new value.
     index_rate: float = 0.5
-    # 0 = consonants get the full index mix, 1 = consonants keep the live voice features.
     protect: float = 0.67
-    # 0 = the model sets the loudness, 1 = the output follows the microphone loudness.
     loudness_follow: float = 0.5
-    # Median filter length for the pitch curve; 0 turns it off.
     pitch_smoothing_ms: int = 30
 
     def __init__(
@@ -86,7 +75,6 @@ class RvcEngine:
         self._base_models = base_models
         self._device = device if device is not None else _default_device()
         if self._device.type == "cuda":
-            # Every block has the same length, so let cuDNN pick its fastest kernels once.
             torch.backends.cudnn.benchmark = True
         self._content_encoder = content_encoder
         self._pitch_extractor = pitch_extractor
@@ -362,7 +350,6 @@ def _load_index(index_path: Path | None) -> tuple[Any | None, np.ndarray | None]
 
 
 def _upsample_frames(feats: torch.Tensor) -> torch.Tensor:
-    """ContentVec gives one frame per 20 ms; the synthesizer wants one per 10 ms."""
     doubled = F.interpolate(feats.permute(0, 2, 1), scale_factor=2, mode="nearest")
     return doubled.permute(0, 2, 1)
 
@@ -400,7 +387,6 @@ def _loudness_envelope(audio: np.ndarray, length: int, scale: float = 1.0) -> np
     power = np.cumsum(np.concatenate([[0.0], np.square(padded)]))
     ends = np.minimum(starts + frame, len(padded))
     rms = np.sqrt((power[ends] - power[starts]) / np.maximum(ends - starts, 1))
-    # A window starting at `starts` in the padded audio is centred on `starts` in the original.
     centres = starts * (length / max(len(audio), 1))
     return np.interp(np.arange(length), centres, rms).astype(np.float32)
 
@@ -425,12 +411,6 @@ def _fit_length(values: np.ndarray, length: int) -> np.ndarray:
 
 
 def _single_thread_faiss() -> None:
-    """Keep faiss single-threaded on the calling thread.
-
-    torch and faiss each bundle their own libomp; a multi-threaded faiss search then
-    segfaults on macOS. The OpenMP thread count is per thread, so this must run on the
-    thread that searches (the audio worker), not only where the index was loaded.
-    """
     import faiss
 
     faiss.omp_set_num_threads(1)

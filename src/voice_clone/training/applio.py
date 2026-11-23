@@ -18,7 +18,6 @@ APPLIO_PYTHON = "3.12"
 WINDOWS_TORCH_INDEX = "https://download.pytorch.org/whl/cu128"
 READY_MARKER = ".voice-clone-ready"
 INSTALL_STEPS = 4
-# "0" lets Applio pick CUDA, then Apple MPS, then CPU. "-" forces CPU.
 GPU_ID = "0"
 CPU_ID = "-"
 
@@ -33,7 +32,6 @@ def git_head(repo_dir: Path) -> str:
 
 
 class Applio:
-    """Runs a pinned Applio release in its own virtual environment."""
 
     def __init__(
         self,
@@ -67,7 +65,6 @@ class Applio:
         return self.logs_dir / name
 
     def ensure_installed(self, report: Callable[[str], None] = logger.info) -> None:
-        """Install Applio if needed. report gets one message per step, for showing progress."""
         if self.is_installed:
             return
         git = require_tool("git")
@@ -106,7 +103,6 @@ class Applio:
         self._runner([*pip, "--upgrade", "pip"], cwd=self.source_dir)
         install = [*pip, "-r", "requirements-engine.txt"]
         if self._platform == "win32":
-            # CUDA wheels carry a "+cu128" tag, which pip ranks above the plain CPU wheels.
             install += ["--extra-index-url", WINDOWS_TORCH_INDEX]
         self._runner(install, cwd=self.source_dir)
 
@@ -161,7 +157,6 @@ class Applio:
 
     @property
     def _extract_device(self) -> str:
-        # Applio 3.7.1 embedding extraction fails on Apple MPS (float64 tensors), so use CPU.
         return CPU_ID if self._platform == "darwin" else GPU_ID
 
     def train(
@@ -206,6 +201,5 @@ class Applio:
 
     @staticmethod
     def _require_output(path: Path, step: str) -> None:
-        # Applio's core.py prints errors but still exits 0, so check its output files.
         if not path.exists():
             raise TrainingError(f"{step} failed. See the Applio output above for the reason.")

@@ -14,7 +14,6 @@ AUDIO_SUFFIXES = frozenset(
 DATASET_SAMPLE_RATE = 48000
 MIN_SECONDS = 60.0
 RECOMMENDED_SECONDS = 600.0
-# Cut low hum (e.g. 50/60 Hz mains) and even out loudness before Applio slices the audio.
 AUDIO_FILTER = "highpass=f=70,loudnorm=I=-20:TP=-2:LRA=11"
 
 
@@ -51,7 +50,6 @@ def prepare_dataset(
     ffmpeg: str = "ffmpeg",
     runner: CommandRunner = run_command,
 ) -> DatasetInfo:
-    """Convert recordings to clean 48 kHz mono WAV files in out_dir (old files are removed)."""
     sources = collect_audio_files(inputs)
     if out_dir.exists():
         shutil.rmtree(out_dir)

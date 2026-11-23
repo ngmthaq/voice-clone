@@ -10,8 +10,6 @@ BACK_WHILE_TRAINING_MESSAGE = "Stop training first, then go back."
 
 
 class TrainScreen(Screen[None]):
-    """Train a new voice from recordings."""
-
     SUB_TITLE = "Train a voice"
     BINDINGS = [Binding("escape", "back", "Back")]
 
@@ -28,7 +26,6 @@ class TrainScreen(Screen[None]):
     def action_back(self) -> None:
         panel = self.query_one("#train-panel", TrainPanelWidget)
         if panel.running:
-            # Leaving would stop training; make that the user's explicit choice.
             self.notify(BACK_WHILE_TRAINING_MESSAGE, severity="warning")
             return
         self.dismiss()

@@ -53,7 +53,6 @@ def test_missing_program_raises() -> None:
 def test_stop_ends_the_command_and_its_children() -> None:
     out = Collected()
     runner = out.runner()
-    # The child starts a grandchild that keeps the output pipe open; stop must end both.
     code = (
         "import subprocess, sys, time\n"
         "subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(30)'])\n"

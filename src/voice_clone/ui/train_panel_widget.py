@@ -45,15 +45,11 @@ STOPPED_MESSAGE = (
 
 @dataclass(frozen=True)
 class _Event:
-    """Sent from the training thread to the UI. kind: line, transient, step, done, failed."""
-
     kind: str
     text: str
 
 
 class TrainPanelWidget(Vertical):
-    """The Train tab: pick recordings and options, run training, and show its progress."""
-
     def __init__(self, *, id: str | None = None) -> None:
         super().__init__(id=id)
         self._events: deque[_Event] = deque()
@@ -118,7 +114,6 @@ class TrainPanelWidget(Vertical):
         yield ProgressBar(total=None, show_eta=False, id="train-progress")
         yield Static("", id="train-status")
         yield RichLog(
-            # min_width: wrap at the panel's width, not RichLog's default of 78 columns.
             max_lines=MAX_LOG_LINES,
             min_width=LOG_MIN_WIDTH,
             wrap=True,
@@ -202,8 +197,6 @@ class TrainPanelWidget(Vertical):
 
     @work(thread=True, exclusive=True, group="train")
     def _train(self, options: TrainOptions, runner: StreamingRunner) -> None:
-        # Talks to the UI only through self._events, so it never waits on the UI thread
-        # and it can still finish after the app has closed.
         root = training_dir()
         try:
             train_voice(

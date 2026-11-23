@@ -51,7 +51,6 @@ NO_VOICES_MESSAGE = (
     "No voices found. Go back (Esc) and choose 'Train a voice', "
     "or put a voice in voices/<name>/model.pth"
 )
-# Above this load (conversion time / audio length) the voice will soon start to drop.
 SLOW_LOAD = 0.9
 SLOW_MESSAGE = (
     "Too slow for this computer: converting takes {percent}% of real time{dropped}, so the "
@@ -60,7 +59,6 @@ SLOW_MESSAGE = (
 DEFAULT_GATE = GateSettings()
 DEFAULT_SETTINGS = Settings()
 DEFAULT_INDEX_PERCENT = DEFAULT_SETTINGS.index_percent
-# id, label, settings field, minimum, maximum, hint shown under the input
 INDEX_FIELD = (
     "index-percent",
     "Index voice (%)",
@@ -104,7 +102,6 @@ ADVANCED_VOICE_FIELDS = (
     ),
 )
 VOICE_FIELDS = (INDEX_FIELD, *ADVANCED_VOICE_FIELDS)
-# id, label, settings field, minimum, maximum, input type
 GATE_FIELDS = (
     (
         "gate-hold",
@@ -137,8 +134,6 @@ GATE_FIELDS = (
 
 
 class MainScreen(Screen[None]):
-    """The voice changer: pick devices and a voice, then convert the microphone live."""
-
     SUB_TITLE = "Voice changer"
     BINDINGS = [
         Binding("escape", "back", "Back"),
@@ -279,7 +274,7 @@ class MainScreen(Screen[None]):
         if self._working:
             self._set_status("Please wait until loading or the download is done.", "warning")
             return
-        self.dismiss()  # on_unmount stops the voice changer
+        self.dismiss()
 
     @on(Button.Pressed, "#start-button")
     def _on_start_pressed(self) -> None:
@@ -548,7 +543,6 @@ class MainScreen(Screen[None]):
         self.query_one("#pitch-label", Label).update(f"{self._pitch:+d}")
 
     def _refresh_controls(self) -> None:
-        # While loading or running, every setting is locked; stop to change them.
         locked = self._working or self._converting
         for widget in self.query("#tabs Select, #tabs Input, #tabs Button"):
             widget.disabled = locked

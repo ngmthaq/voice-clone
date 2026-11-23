@@ -18,8 +18,6 @@ SAMPLE_RATES = (32000, 40000, 48000)
 MAX_EPOCHS = 10000
 MAX_BATCH_SIZE = 50
 WEIGHTS_PATTERN = re.compile(r"_(\d+)e_(\d+)s\.pth$")
-# Applio prints "<name> | epoch=5 | step=120 | batch=3/24" during an epoch,
-# and "<name> | epoch=5 | step=144 | time=…" when it ends.
 EPOCH_PATTERN = re.compile(r"\| epoch=(\d+) \| step=\d+(?: \| batch=(\d+)/(\d+))?")
 CLI_PAUSE_HINT = "Press Ctrl+C to pause; run the same command again to continue."
 
@@ -47,7 +45,6 @@ def train_voice(
     prepare: Callable[..., DatasetInfo] = prepare_dataset,
     pause_hint: str = CLI_PAUSE_HINT,
 ) -> Path:
-    """Prepare recordings, train with Applio, and install the result as a voice profile."""
     validate_options(options)
     voice_dir = voices_root / options.name
     if voice_exists(voices_root, options.name) and not options.force:
@@ -92,7 +89,6 @@ def train_voice(
 
 
 def epochs_done(line: str) -> float | None:
-    """How many epochs are finished, read from one line of Applio output (None if not known)."""
     match = EPOCH_PATTERN.search(line)
     if match is None:
         return None

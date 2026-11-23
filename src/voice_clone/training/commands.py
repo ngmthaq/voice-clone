@@ -17,7 +17,6 @@ INSTALL_HINTS = {
     "git": "Install: 'xcode-select --install' (macOS) or 'winget install Git.Git' (Windows).",
 }
 READ_CHUNK_BYTES = 4096
-# A line ends with "\n" (or "\r\n"). A lone "\r" ends a progress-bar redraw, which is transient.
 LINE_END = re.compile(r"\r\n|\n|\r")
 PYTHON_HINT = (
     "Install Python {version} from https://www.python.org/downloads/ "
@@ -39,7 +38,6 @@ def run_command(
     cwd: Path | None = None,
     env: Mapping[str, str] | None = None,
 ) -> None:
-    """Run a command and stream its output to the console. Non-zero exit raises."""
     try:
         result = subprocess.run(list(args), cwd=cwd, env=dict(env) if env else None, check=False)
     except OSError as exc:
@@ -128,7 +126,6 @@ class StreamingRunner:
     def _emit(self, text: str, final: bool) -> str:
         start = 0
         for match in LINE_END.finditer(text):
-            # A "\r" at the very end may be the first half of "\r\n": wait for more text.
             if match.group() == "\r" and match.end() == len(text) and not final:
                 break
             line = text[start : match.start()]
@@ -144,7 +141,6 @@ class StreamingRunner:
         return rest
 
     def _group_options(self) -> dict[str, object]:
-        # Its own process group, so stop() can end Applio and every process it started.
         if self._platform == "win32":
             return {"creationflags": getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)}
         return {"start_new_session": True}
@@ -172,7 +168,6 @@ def require_tool(name: str) -> str:
 
 
 def find_python(version: str, platform: str = sys.platform) -> list[str]:
-    """Return the command that starts Python <version>, e.g. ['/usr/bin/python3.12']."""
     path = shutil.which(f"python{version}")
     if path is not None:
         return [path]

@@ -21,20 +21,14 @@ LevelCallback = Callable[[float, float], None]
 ErrorCallback = Callable[[Exception], None]
 
 ENGINE_INPUT_RATE = 16000
-# Small on purpose: if conversion falls behind, drop the oldest audio instead of building a
-# delay that keeps playing after you stop talking.
 QUEUE_BLOCKS = 2
 RING_BLOCKS = 4
-# Converted audio waiting to be played is capped at this many blocks. The microphone and the
-# output device run on separate clocks, so without a cap the delay slowly grows.
 MAX_OUTPUT_BACKLOG_BLOCKS = 2
-# How fast the measured load follows new blocks (0-1; higher reacts faster).
 LOAD_SMOOTHING = 0.3
 FIFO_PRIME_MS = 50
 OUTPUT_PRIME_MS = 40
 POLL_SECONDS = 0.1
 JOIN_SECONDS = 5.0
-# Removes mains hum (50/60 Hz) and rumble below the voice range, like the training data filter.
 HUM_FILTER_HZ = 90
 HUM_FILTER_ORDER = 8
 MIN_CONTEXT_MS = 200
@@ -86,8 +80,6 @@ class ConversionPipeline:
         self._streams: list[Any] = []
         self.dropped_blocks = 0
         self._reported_drops = 0
-        # Conversion time divided by the audio length (smoothed). Above 1.0 the computer is
-        # too slow for the current settings and audio gets dropped.
         self.load = 0.0
 
         self._reset_state()
@@ -140,11 +132,6 @@ class ConversionPipeline:
         self._gate.configure(settings)
 
     def set_context_ms(self, context_ms: int) -> None:
-        """Change how much earlier audio the model hears. The next hop uses the new length.
-
-        More context helps the model recognise sounds (clearer words) and adds no delay, but
-        each conversion takes longer. If it gets too slow, audio blocks are dropped.
-        """
         self._context_samples = self._context_length(context_ms)
 
     def _context_length(self, context_ms: int) -> int:
@@ -177,20 +164,17 @@ class ConversionPipeline:
 
     def _convert_hop(self, hop: np.ndarray) -> np.ndarray:
         hop = self._gate.process(hop)
-        context = self._context_samples  # read once: the UI thread may change it
+        context = self._context_samples
         engine_input = np.concatenate([_fit_history(self._history, context), hop])
         self._history = engine_input[len(engine_input) - context :]
         body_len = round(self._hop * self._engine_ratio)
 
         silent = not hop.any()
         if silent and self._last_hop_silent:
-            # The model turns silence into faint noise, so output true silence instead.
-            # The first silent hop still runs, so the last word fades out naturally.
             self._tail = np.zeros_like(self._tail)
             return np.zeros(body_len, dtype=np.float32)
         self._last_hop_silent = silent
 
-        # Only the new hop plus the crossfade is played, so only that much is synthesized.
         converted = np.asarray(
             self._engine.convert(engine_input, tail=self._engine_tail), dtype=np.float32
         )
@@ -278,7 +262,6 @@ class ConversionPipeline:
         try:
             self._queue.put_nowait(block)
         except queue.Full:
-            # Behind: throw away the oldest waiting block, so what is played stays recent.
             self.dropped_blocks += 1
             try:
                 self._queue.get_nowait()
@@ -331,7 +314,6 @@ class ConversionPipeline:
 
 
 def _fit_history(history: np.ndarray, length: int) -> np.ndarray:
-    """Keep the newest `length` samples, padding older missing audio with silence."""
     if len(history) >= length:
         return history[len(history) - length :]
     return np.concatenate([np.zeros(length - len(history), dtype=np.float32), history])

@@ -1,5 +1,5 @@
 class VoiceCloneError(Exception):
-    """Base class for all expected voice-clone errors."""
+    pass
 
 
 class DeviceNotFoundError(VoiceCloneError):
@@ -23,4 +23,4 @@ class TrainingError(VoiceCloneError):
 
 
 class TrainingStoppedError(TrainingError):
-    """The user stopped training. The last checkpoint is kept, so it can continue later."""
+    pass
