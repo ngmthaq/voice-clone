@@ -91,6 +91,8 @@ python -m voice_clone bench
 
 It converts made-up speech with each preset and prints the **Load** (time to convert a block ÷ block length). Under 1.0 keeps up; pick the heaviest preset with a Load under about 0.7, so there is room for pauses in your computer's other work. `p95` is the load of the slowest blocks, and `Slow` counts blocks that took longer than real time. The last column shows where the time goes (encode, index, pitch, synth). Add `--cpu` to test without the graphics card, or `--preset light` to test one preset.
 
+On an NVIDIA card from the GeForce 16 or RTX series on, the voice model runs in half precision (fp16), which is faster and uses less graphics memory. Older cards (GeForce 10 series and before) stay at full precision (fp32), because fp16 is slow on them. **Check setup** shows which one your card uses. To choose yourself, add `precision = "fp16"` or `precision = "fp32"` to the settings file (below); `"auto"` is the default. `fp16` also works on Apple GPUs (a little faster there); the CPU always uses fp32. To compare, run `python -m voice_clone bench --precision fp16` and `--precision fp32`.
+
 On the CPU, the app leaves one core free for the audio and the screen. To set the number of CPU threads yourself, add `cpu_threads = 4` (for example) to the settings file while the app is closed; `0` means automatic. The settings file is `~/Library/Application Support/voice-clone/settings.toml` on macOS and `%LOCALAPPDATA%\voice-clone\voice-clone\settings.toml` on Windows.
 
 ## Logs

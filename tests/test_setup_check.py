@@ -120,6 +120,17 @@ def test_cuda_shows_the_card_name(tmp_path):
     assert (check.status, check.detail) == (OK, "NVIDIA GPU (CUDA): RTX 3060")
 
 
+@pytest.mark.parametrize(
+    ("fp16", "suffix"), [(True, ", fast fp16"), (False, ", fp32 (older card, fp16 is slow)")]
+)
+def test_cuda_shows_whether_fp16_is_used(tmp_path, fp16, suffix):
+    facts = _facts(tmp_path, platform="win32", compute="cuda", gpu_name="GTX 1060", gpu_fp16=fp16)
+
+    check = _by_name(evaluate(facts))["GPU"]
+
+    assert check.detail == "NVIDIA GPU (CUDA): GTX 1060" + suffix
+
+
 def test_no_voices_points_to_training(tmp_path):
     check = _by_name(evaluate(_facts(tmp_path, voices=[])))["Voices"]
 

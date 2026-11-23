@@ -65,3 +65,17 @@ def test_failed_save_keeps_the_old_file(tmp_path, monkeypatch):
 
     assert load_settings(path).pitch == 3
     assert [p.name for p in tmp_path.iterdir()] == ["settings.toml"]
+
+
+def test_unknown_precision_falls_back_to_defaults(tmp_path):
+    path = tmp_path / "settings.toml"
+    path.write_text('precision = "fp8"\n')
+
+    assert load_settings(path).precision == "auto"
+
+
+def test_precision_round_trips(tmp_path):
+    path = tmp_path / "settings.toml"
+    save_settings(Settings(precision="fp16"), path)
+
+    assert load_settings(path).precision == "fp16"

@@ -48,6 +48,7 @@ class Facts:
     audio_error: str = ""
     compute: str = "cpu"
     gpu_name: str = ""
+    gpu_fp16: bool | None = None
     nvidia_driver: bool = False
     voices: list[str] = field(default_factory=list)
     ffmpeg: str | None = None
@@ -79,7 +80,7 @@ def gather_facts() -> Facts:
     except Exception as exc:
         logger.exception("Could not list audio devices")
         facts.audio_error = str(exc) or type(exc).__name__
-    facts.compute, facts.gpu_name = _compute_device()
+    facts.compute, facts.gpu_name, facts.gpu_fp16 = _compute_device()
     facts.nvidia_driver = shutil.which("nvidia-smi") is not None
     try:
         facts.voices = [profile.name for profile in discover_profiles(voices_dir())]
@@ -193,7 +194,10 @@ def _audio(facts: Facts) -> list[Check]:
 
 def _compute(facts: Facts) -> Check:
     if facts.compute == "cuda":
-        return Check(VOICE_CHANGER, "GPU", OK, f"NVIDIA GPU (CUDA): {facts.gpu_name}".rstrip(": "))
+        detail = f"NVIDIA GPU (CUDA): {facts.gpu_name}".rstrip(": ")
+        if facts.gpu_fp16 is not None:
+            detail += ", fast fp16" if facts.gpu_fp16 else ", fp32 (older card, fp16 is slow)"
+        return Check(VOICE_CHANGER, "GPU", OK, detail)
     if facts.compute == "mps":
         return Check(VOICE_CHANGER, "GPU", OK, "Apple GPU (Metal)")
     if facts.nvidia_driver:
@@ -290,18 +294,19 @@ def _is_virtual_device(name: str) -> bool:
     return "blackhole" in lowered or "cable output" in lowered or _is_virtual_output(name)
 
 
-def _compute_device() -> tuple[str, str]:
+def _compute_device() -> tuple[str, str, bool | None]:
     try:
         import torch
 
-        from voice_clone.engine.device import select_torch_device
+        from voice_clone.engine.device import select_torch_device, use_half_precision
 
-        device = select_torch_device().type
-        name = torch.cuda.get_device_name(0) if device == "cuda" else ""
-        return device, name
+        device = select_torch_device()
+        if device.type != "cuda":
+            return device.type, "", None
+        return "cuda", torch.cuda.get_device_name(0), use_half_precision(device, "auto")
     except Exception:
         logger.exception("Could not check the PyTorch device")
-        return "cpu", ""
+        return "cpu", "", None
 
 
 def _with_fix(check: Check, fix: str) -> Check:

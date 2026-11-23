@@ -1,6 +1,7 @@
 import logging
 import os
 from pathlib import Path
+from typing import Literal
 
 import tomli
 import tomli_w
@@ -30,6 +31,7 @@ class Settings(BaseModel):
     crossfade_ms: int = Field(80, ge=10, le=200)
     hum_filter_hz: int = Field(90, ge=0, le=200)
     cpu_threads: int = Field(0, ge=0, le=256)
+    precision: Literal["auto", "fp32", "fp16"] = "auto"
     train_name: str = "my-voice"
     train_epochs: int = Field(200, ge=1, le=10000)
     train_batch_size: int = Field(8, ge=1, le=50)

@@ -300,3 +300,44 @@ def test_v2_encoder_returns_last_hidden_state(tiny_contentvec):
         got = encoder.encode(audio, "v2")
 
     assert torch.allclose(got, expected)
+
+
+def test_cpu_engine_stays_fp32_when_fp16_is_asked():
+    engine = RvcEngine(
+        BaseModelPaths(Path("x"), Path("y")),
+        torch.device("cpu"),
+        FakeEncoder(),
+        FakePitch(),
+        precision="fp16",
+    )
+
+    assert engine.precision == "fp32"
+
+
+def test_half_voice_converts_to_float32(v2_profile, monkeypatch):
+    monkeypatch.setattr(
+        "voice_clone.engine.device.use_half_precision", lambda device, precision: True
+    )
+    engine = RvcEngine(
+        BaseModelPaths(Path("x"), Path("y")),
+        torch.device("cpu"),
+        FakeEncoder(),
+        FakePitch(),
+        precision="fp16",
+    )
+    engine.load(v2_profile)
+
+    out = engine.convert(np.zeros(12000, dtype=np.float32), tail=4000)
+
+    assert engine.precision == "fp16"
+    assert next(engine._voice.net_g.parameters()).dtype == torch.float16
+    assert out.dtype == np.float32 and np.isfinite(out).all()
+
+
+def test_half_content_encoder_returns_half(tiny_contentvec):
+    encoder = rvc_engine._HubertContentEncoder(tiny_contentvec, torch.device("cpu"), torch.float16)
+
+    with torch.inference_mode():
+        out = encoder.encode(torch.randn(1, 8000), "v2")
+
+    assert out.dtype == torch.float16

@@ -103,6 +103,12 @@ def _build_parser() -> argparse.ArgumentParser:
     bench.add_argument(
         "--threads", type=int, default=None, help="CPU threads (default: the saved setting)."
     )
+    bench.add_argument(
+        "--precision",
+        choices=("auto", "fp32", "fp16"),
+        default=None,
+        help="Model precision on the GPU (default: the saved setting).",
+    )
     return parser
 
 
@@ -131,9 +137,12 @@ def _run_bench_command(args: argparse.Namespace) -> int:
 
     device = torch.device("cpu") if args.cpu else select_torch_device()
     threads = settings.cpu_threads if args.threads is None else args.threads
-    engine = RvcEngine(base_model_paths(models_dir()), device, cpu_threads=threads)
+    precision = args.precision or settings.precision
+    engine = RvcEngine(
+        base_model_paths(models_dir()), device, cpu_threads=threads, precision=precision
+    )
     presets = args.preset or list(PERFORMANCE_PRESETS)
-    print(f"Voice: {profile.name}   Device: {device}", end="")
+    print(f"Voice: {profile.name}   Device: {device} ({engine.precision})", end="")
     print(f"   CPU threads: {torch.get_num_threads()}" if device.type == "cpu" else "")
     print(f"{'Preset':<10}{'Block':>7}{'Load':>7}{'p95':>7}{'Slow':>6}   Stage ms per hop")
     try:

@@ -75,9 +75,15 @@ class RvcEngine:
         content_encoder: ContentEncoder | None = None,
         pitch_extractor: PitchExtractor | None = None,
         cpu_threads: int = 0,
+        precision: str = "auto",
     ) -> None:
+        from voice_clone.engine.device import use_half_precision
+
         self._base_models = base_models
         self._device = device if device is not None else _default_device()
+        self._dtype = (
+            torch.float16 if use_half_precision(self._device, precision) else torch.float32
+        )
         if self._device.type == "cuda":
             torch.backends.cudnn.benchmark = True
         elif self._device.type == "cpu":
@@ -97,6 +103,10 @@ class RvcEngine:
         return INPUT_SAMPLE_RATE
 
     @property
+    def precision(self) -> str:
+        return "fp16" if self._dtype == torch.float16 else "fp32"
+
+    @property
     def output_sample_rate(self) -> int:
         voice = self._voice
         return voice.target_rate if voice is not None else 0
@@ -107,18 +117,19 @@ class RvcEngine:
     def load(self, profile: VoiceProfile) -> None:
         with self._lock:
             self._ensure_base_encoders()
-            voice = _load_voice(profile, self._device)
+            voice = _load_voice(profile, self._device, self._dtype)
             if self.index_rate > 0:
                 _ensure_index(voice)
             self._voice = voice
         logger.info(
-            "Loaded voice %s (%s, %d Hz, f0=%s, index=%s) on %s",
+            "Loaded voice %s (%s, %d Hz, f0=%s, index=%s) on %s, %s",
             profile.name,
             voice.version,
             voice.target_rate,
             voice.has_pitch,
             voice.index_path is not None,
             self._device,
+            self.precision,
         )
 
     def convert(self, audio: np.ndarray, tail: int | None = None) -> np.ndarray:
@@ -165,6 +176,7 @@ class RvcEngine:
                 feats, pitch, pitchf = feats[:, :frames], pitch[:, :frames], pitchf[:, :frames]
                 feats = self._protect_consonants(feats, live[:, :frames], pitchf)
                 net_args = (pitch, pitchf)
+            feats = feats.to(self._dtype)
             lengths = torch.tensor([frames], dtype=torch.long, device=self._device)
             sid = torch.zeros(1, dtype=torch.long, device=self._device)
             if tail is None:
@@ -230,14 +242,16 @@ class RvcEngine:
     def _ensure_base_encoders(self) -> None:
         if self._content_encoder is None:
             self._content_encoder = _HubertContentEncoder(
-                self._base_models.contentvec_dir, self._device
+                self._base_models.contentvec_dir, self._device, self._dtype
             )
         if self._pitch_extractor is None:
             self._pitch_extractor = _RmvpePitchExtractor(self._base_models.rmvpe_path, self._device)
 
 
 class _HubertContentEncoder:
-    def __init__(self, model_dir: Path, device: torch.device) -> None:
+    def __init__(
+        self, model_dir: Path, device: torch.device, dtype: torch.dtype = torch.float32
+    ) -> None:
         from transformers import HubertConfig, HubertModel
 
         class HubertWithFinalProj(HubertModel):
@@ -263,7 +277,8 @@ class _HubertContentEncoder:
             logger.warning("ContentVec missing weights: %s", missing)
         if unexpected:
             logger.debug("ContentVec unused weights: %s", unexpected)
-        self._model = model.float().eval().to(device)
+        self._model = model.eval().to(device, dtype)
+        self._dtype = dtype
         self._all_layers = self._model.encoder.layers
         # v1 voices use layer 9. Without the stable layer norm, the encoder output after
         # 9 layers is exactly that hidden state, so the last 3 layers can be skipped.
@@ -274,7 +289,7 @@ class _HubertContentEncoder:
         )
 
     def encode(self, audio: torch.Tensor, version: str) -> torch.Tensor:
-        audio = audio.float()
+        audio = audio.to(self._dtype)
         if version != "v1":
             return self._model(audio).last_hidden_state
         if self._v1_layers is None:
@@ -325,7 +340,9 @@ def _adapt_weight_norm_keys(weights: dict[str, Any], model_keys: set[str]) -> di
     return adapted
 
 
-def _load_voice(profile: VoiceProfile, device: torch.device) -> _LoadedVoice:
+def _load_voice(
+    profile: VoiceProfile, device: torch.device, dtype: torch.dtype = torch.float32
+) -> _LoadedVoice:
     name = profile.model_path.name
     try:
         checkpoint = torch.load(profile.model_path, map_location="cpu", weights_only=True)
@@ -348,14 +365,14 @@ def _load_voice(profile: VoiceProfile, device: torch.device) -> _LoadedVoice:
     try:
         config[-3] = weights["emb_g.weight"].shape[0]
         target_rate = int(config[-1])
-        net_g = synth_class(*config, is_half=False)
+        net_g = synth_class(*config, is_half=dtype == torch.float16)
         net_g.load_state_dict(weights, strict=False)
     except Exception as error:
         logger.exception("Could not build the synthesizer for %s", name)
         raise ModelLoadError(f"Could not load the voice model {name}.") from error
     if hasattr(net_g, "enc_q"):
         del net_g.enc_q
-    net_g = net_g.float().eval().to(device)
+    net_g = net_g.eval().to(device, dtype)
     return _LoadedVoice(net_g, target_rate, version, has_pitch, profile.index_path)
 
 

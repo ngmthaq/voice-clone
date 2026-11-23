@@ -571,7 +571,9 @@ class MainScreen(Screen[None]):
     def _get_engine(self) -> RvcEngine:
         if self._engine is None:
             self._engine = RvcEngine(
-                base_model_paths(models_dir()), cpu_threads=self._settings.cpu_threads
+                base_model_paths(models_dir()),
+                cpu_threads=self._settings.cpu_threads,
+                precision=self._settings.precision,
             )
         return self._engine
 

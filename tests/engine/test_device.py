@@ -1,6 +1,12 @@
+import pytest
 import torch
 
-from voice_clone.engine.device import auto_cpu_threads, configure_cpu_threads, select_torch_device
+from voice_clone.engine.device import (
+    auto_cpu_threads,
+    configure_cpu_threads,
+    select_torch_device,
+    use_half_precision,
+)
 
 
 def _patch(monkeypatch, cuda, mps):
@@ -41,3 +47,42 @@ def test_configure_cpu_threads_uses_explicit_count(monkeypatch):
 
     assert configure_cpu_threads(3) == 3
     assert seen == [3]
+
+
+def _capability(monkeypatch, major):
+    monkeypatch.setattr(torch.cuda, "get_device_capability", lambda device=None: (major, 5))
+
+
+@pytest.mark.parametrize(("major", "half"), [(6, False), (7, True), (8, True)])
+def test_auto_uses_fp16_only_on_newer_nvidia_cards(monkeypatch, major, half):
+    _capability(monkeypatch, major)
+
+    assert use_half_precision(torch.device("cuda"), "auto") is half
+
+
+def test_forced_fp16_runs_on_older_nvidia_cards(monkeypatch):
+    _capability(monkeypatch, 6)
+
+    assert use_half_precision(torch.device("cuda"), "fp16") is True
+
+
+def test_fp32_is_never_half(monkeypatch):
+    _capability(monkeypatch, 8)
+
+    assert use_half_precision(torch.device("cuda"), "fp32") is False
+
+
+@pytest.mark.parametrize("precision", ["auto", "fp16"])
+def test_cpu_never_uses_fp16(precision):
+    assert use_half_precision(torch.device("cpu"), precision) is False
+
+
+def test_apple_gpu_uses_fp16_only_when_asked():
+    mps = torch.device("mps")
+
+    assert (use_half_precision(mps, "auto"), use_half_precision(mps, "fp16")) == (False, True)
+
+
+def test_unknown_precision_is_rejected():
+    with pytest.raises(ValueError):
+        use_half_precision(torch.device("cpu"), "fp8")

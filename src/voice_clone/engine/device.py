@@ -35,3 +35,28 @@ def configure_cpu_threads(threads: int = 0) -> int:
         _threads_configured = True
     logger.info("Using %d CPU thread(s) for the voice model", count)
     return count
+
+
+PRECISIONS = ("auto", "fp32", "fp16")
+HALF_MIN_CUDA_MAJOR = 7
+
+
+def use_half_precision(device: torch.device, precision: str = "auto") -> bool:
+    """Whether to run the models in fp16.
+
+    `auto` picks fp16 only on NVIDIA cards from the GeForce 16/20 series on (compute
+    capability 7.0+): older cards (GeForce 10 series and before) run fp16 slowly. `fp16`
+    also works on Apple GPUs. The CPU always uses fp32.
+    """
+    if precision not in PRECISIONS:
+        raise ValueError(f"precision must be one of {PRECISIONS}")
+    if precision == "fp32" or device.type == "cpu":
+        if precision == "fp16":
+            logger.warning("fp16 is not used on the CPU; using fp32")
+        return False
+    if precision == "fp16":
+        return device.type in ("cuda", "mps")
+    if device.type != "cuda":
+        return False
+    major, _ = torch.cuda.get_device_capability(device)
+    return major >= HALF_MIN_CUDA_MAJOR
