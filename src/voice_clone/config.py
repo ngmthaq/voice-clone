@@ -106,8 +106,6 @@ PERFORMANCE_PRESETS: dict[str, tuple[str, dict[str, float]]] = {
             context_ms=200,
             block_ms=1000,
             crossfade_ms=40,
-            gate_hold_ms=200,
-            gate_open_above_db=10.0,
         ),
     ),
     "light": (
@@ -120,8 +118,6 @@ PERFORMANCE_PRESETS: dict[str, tuple[str, dict[str, float]]] = {
             context_ms=300,
             block_ms=600,
             crossfade_ms=60,
-            gate_hold_ms=300,
-            gate_open_above_db=8.0,
         ),
     ),
     "balanced": (

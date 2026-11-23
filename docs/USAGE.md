@@ -54,11 +54,11 @@ The easiest way to pick one: on the start screen choose **Check setup**, then **
 | Block size (ms) | 1000 | 600 | 400 | 300 | 200 |
 | Crossfade (ms) | 40 | 60 | 80 | 80 | 60 |
 | Hum filter (Hz) | 90 | 90 | 90 | 90 | 90 |
-| Hold (ms) | 200 | 300 | 500 | 500 | 600 |
+| Hold (ms) | 500 | 500 | 500 | 500 | 600 |
 | Open early (ms) | 100 | 100 | 100 | 100 | 100 |
-| Above noise (dB) | 10 | 8 | 6 | 6 | 5 |
+| Above noise (dB) | 6 | 6 | 6 | 6 | 5 |
 
-Context, Block size and Crossfade decide most of the speed. Index voice adds a search on every block; at 0 (Minimal) the search is skipped. While the noise gate is closed the model does not run, so a shorter Hold and a higher Above noise save work in pauses. With less context, pitch and consonants are less steady, so lighter presets smooth pitch more and keep more of your live consonants. Hum filter and Open early cost the same at any value, so they are the same in every preset.
+Context, Block size and Crossfade decide most of the speed. Index voice adds a search on every block; at 0 (Minimal) the search is skipped. While the noise gate is closed the model does not run, but a stricter gate (shorter Hold, higher Above noise) cuts the quiet starts and ends of words, so the lighter presets use the same gate as Balanced. With less context, pitch and consonants are less steady, so lighter presets smooth pitch more and keep more of your live consonants. Hum filter and Open early cost the same at any value, so they are the same in every preset.
 
 A higher preset gives less delay and clearer words, but needs a faster computer. If the app says "Too slow for this computer", pick a lighter one. Picking a preset replaces any Advanced settings you changed. Changing any value on the Advanced tab afterwards shows **Custom**.
 

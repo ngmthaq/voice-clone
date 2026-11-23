@@ -326,8 +326,7 @@ def test_slow_conversion_shows_warning(empty_environment):
         ("", "balanced"),
         (
             "index_percent = 40\nprotect_percent = 75\nloudness_percent = 60\n"
-            "pitch_smoothing_ms = 50\ncontext_ms = 300\nblock_ms = 600\ncrossfade_ms = 60\n"
-            "gate_hold_ms = 300\ngate_open_above_db = 8.0\n",
+            "pitch_smoothing_ms = 50\ncontext_ms = 300\nblock_ms = 600\ncrossfade_ms = 60\n",
             "light",
         ),
         ("context_ms = 300\nblock_ms = 600\ncrossfade_ms = 60\n", "custom"),

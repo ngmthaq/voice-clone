@@ -1,7 +1,13 @@
 import pytest
 
 import voice_clone.config as config
-from voice_clone.config import Settings, apply_preset, load_settings, save_settings
+from voice_clone.config import (
+    PERFORMANCE_PRESETS,
+    Settings,
+    apply_preset,
+    load_settings,
+    save_settings,
+)
 
 
 def test_save_then_load_returns_same_settings(tmp_path):
@@ -84,6 +90,14 @@ def test_precision_round_trips(tmp_path):
 def test_apply_preset_sets_preset_values_and_keeps_the_rest():
     settings = apply_preset(Settings(profile="me", pitch=3), "light")
 
-    assert (settings.block_ms, settings.context_ms, settings.gate_open_above_db) == (600, 300, 8.0)
+    assert (settings.block_ms, settings.context_ms, settings.gate_open_above_db) == (600, 300, 6.0)
     assert (settings.profile, settings.pitch) == ("me", 3)
     assert isinstance(settings.block_ms, int)
+
+
+def test_light_and_minimal_use_the_balanced_noise_gate():
+    gate = ("gate_hold_ms", "gate_pre_open_ms", "gate_open_above_db")
+    balanced = {name: PERFORMANCE_PRESETS["balanced"][1][name] for name in gate}
+
+    for preset in ("minimal", "light"):
+        assert {name: PERFORMANCE_PRESETS[preset][1][name] for name in gate} == balanced
