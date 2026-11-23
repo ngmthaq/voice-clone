@@ -322,8 +322,15 @@ def test_slow_conversion_shows_warning(empty_environment):
     "saved, expected",
     [
         ("", "balanced"),
-        ("context_ms = 300\nblock_ms = 600\ncrossfade_ms = 60\n", "light"),
+        (
+            "index_percent = 40\nprotect_percent = 75\nloudness_percent = 60\n"
+            "pitch_smoothing_ms = 50\ncontext_ms = 300\nblock_ms = 600\ncrossfade_ms = 60\n"
+            "gate_hold_ms = 300\ngate_open_above_db = 8.0\n",
+            "light",
+        ),
+        ("context_ms = 300\nblock_ms = 600\ncrossfade_ms = 60\n", "custom"),
         ("context_ms = 700\n", "custom"),
+        ("context_ms = 300\nblock_ms = 600\ncrossfade_ms = 60\ngate_hold_ms = 900\n", "custom"),
     ],
 )
 def test_performance_preset_matches_saved_settings(empty_environment, tmp_path, saved, expected):
@@ -335,7 +342,11 @@ def test_performance_preset_matches_saved_settings(empty_environment, tmp_path, 
     assert _run(body) == expected
 
 
-def test_choosing_a_preset_fills_speed_fields_and_saves(empty_environment):
+def test_choosing_a_preset_sets_every_advanced_value_and_saves(empty_environment, tmp_path):
+    (tmp_path / "settings.toml").write_text(
+        "protect_percent = 10\nhum_filter_hz = 0\ngate_hold_ms = 900\n"
+    )
+
     async def body(app, pilot):
         app.screen.query_one("#preset-select").value = "ultra"
         await pilot.pause()
@@ -350,11 +361,29 @@ def test_choosing_a_preset_fills_speed_fields_and_saves(empty_environment):
     assert preset == "ultra"
     saved = config.load_settings()
     assert (saved.context_ms, saved.block_ms, saved.crossfade_ms) == (2000, 200, 60)
+    assert (
+        saved.index_percent,
+        saved.protect_percent,
+        saved.pitch_smoothing_ms,
+        saved.hum_filter_hz,
+        saved.gate_hold_ms,
+        saved.gate_open_above_db,
+    ) == (60, 50, 20, 90, 600, 5.0)
 
 
 def test_editing_a_speed_field_switches_preset_to_custom(empty_environment):
     async def body(app, pilot):
         app.screen.query_one("#context-ms").value = "800"
+        await pilot.pause()
+        return app.screen.query_one("#preset-select").value
+
+    assert _run(body) == "custom"
+
+
+@pytest.mark.parametrize("field_id, value", [("protect-percent", "20"), ("gate-hold", "800")])
+def test_editing_any_advanced_value_switches_preset_to_custom(empty_environment, field_id, value):
+    async def body(app, pilot):
+        app.screen.query_one(f"#{field_id}").value = value
         await pilot.pause()
         return app.screen.query_one("#preset-select").value
 

@@ -38,16 +38,26 @@ The defaults are a good place to start. If the voice should sound more like the 
 
 ## Performance presets
 
-On the **Simple** tab, **Performance** sets the speed settings to fit the computer:
+On the **Simple** tab, **Performance** sets every setting on the Advanced tab to fit the computer:
 
-| Preset | For | Context | Block size | Crossfade |
+| Setting | Light | Balanced (default) | High | Ultra |
 | --- | --- | --- | --- | --- |
-| Light | laptop or older GPU (e.g. GeForce MX), or no GPU | 300 | 600 | 60 |
-| Balanced (default) | mid-range GPU or Apple M-series | 1000 | 400 | 80 |
-| High | fast GPU | 1500 | 300 | 80 |
-| Ultra | high-end GPU | 2000 | 200 | 60 |
+| For | laptop or older GPU (e.g. GeForce MX), or no GPU | mid-range GPU or Apple M-series | fast GPU | high-end GPU |
+| Index voice (%) | 40 | 50 | 55 | 60 |
+| Protect consonants (%) | 75 | 67 | 60 | 50 |
+| Follow mic volume (%) | 60 | 50 | 45 | 40 |
+| Pitch smoothing (ms) | 50 | 30 | 25 | 20 |
+| Context (ms) | 300 | 1000 | 1500 | 2000 |
+| Block size (ms) | 600 | 400 | 300 | 200 |
+| Crossfade (ms) | 60 | 80 | 80 | 60 |
+| Hum filter (Hz) | 90 | 90 | 90 | 90 |
+| Hold (ms) | 300 | 500 | 500 | 600 |
+| Open early (ms) | 100 | 100 | 100 | 100 |
+| Above noise (dB) | 8 | 6 | 6 | 5 |
 
-A higher preset gives less delay and clearer words, but needs a faster computer. If the app says "Too slow for this computer", pick a lighter one. Changing any of these three values on the Advanced tab shows **Custom**.
+Context, Block size and Crossfade decide most of the speed. Index voice adds a search on every block. While the noise gate is closed the model does not run, so a shorter Hold and a higher Above noise save work in pauses. With less context, pitch and consonants are less steady, so lighter presets smooth pitch more and keep more of your live consonants. Hum filter and Open early cost the same at any value, so they are the same in every preset.
+
+A higher preset gives less delay and clearer words, but needs a faster computer. If the app says "Too slow for this computer", pick a lighter one. Picking a preset replaces any Advanced settings you changed. Changing any value on the Advanced tab afterwards shows **Custom**.
 
 ## Speed and delay
 

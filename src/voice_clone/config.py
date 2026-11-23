@@ -60,28 +60,77 @@ def save_settings(settings: Settings, path: Path | None = None) -> None:
 
 
 CUSTOM_PRESET = "custom"
-PRESET_FIELDS = ("context_ms", "block_ms", "crossfade_ms")
-PERFORMANCE_PRESETS: dict[str, tuple[str, dict[str, int]]] = {
+PRESET_FIELDS = (
+    "index_percent",
+    "protect_percent",
+    "loudness_percent",
+    "pitch_smoothing_ms",
+    "context_ms",
+    "block_ms",
+    "crossfade_ms",
+    "hum_filter_hz",
+    "gate_hold_ms",
+    "gate_pre_open_ms",
+    "gate_open_above_db",
+)
+
+
+def _preset(**values: float) -> dict[str, float]:
+    defaults = Settings()
+    return {name: getattr(defaults, name) for name in PRESET_FIELDS} | values
+
+
+PERFORMANCE_PRESETS: dict[str, tuple[str, dict[str, float]]] = {
     "light": (
         "Light: laptop or older GPU, or no GPU (more delay)",
-        {"context_ms": 300, "block_ms": 600, "crossfade_ms": 60},
+        _preset(
+            index_percent=40,
+            protect_percent=75,
+            loudness_percent=60,
+            pitch_smoothing_ms=50,
+            context_ms=300,
+            block_ms=600,
+            crossfade_ms=60,
+            gate_hold_ms=300,
+            gate_open_above_db=8.0,
+        ),
     ),
     "balanced": (
         "Balanced: mid-range GPU or Apple M-series",
-        {"context_ms": 1000, "block_ms": 400, "crossfade_ms": 80},
+        _preset(),
     ),
     "high": (
         "High: fast GPU (less delay, clearer words)",
-        {"context_ms": 1500, "block_ms": 300, "crossfade_ms": 80},
+        _preset(
+            index_percent=55,
+            protect_percent=60,
+            loudness_percent=45,
+            pitch_smoothing_ms=25,
+            context_ms=1500,
+            block_ms=300,
+            crossfade_ms=80,
+            gate_hold_ms=500,
+            gate_open_above_db=6.0,
+        ),
     ),
     "ultra": (
         "Ultra: high-end GPU (least delay, clearest words)",
-        {"context_ms": 2000, "block_ms": 200, "crossfade_ms": 60},
+        _preset(
+            index_percent=60,
+            protect_percent=50,
+            loudness_percent=40,
+            pitch_smoothing_ms=20,
+            context_ms=2000,
+            block_ms=200,
+            crossfade_ms=60,
+            gate_hold_ms=600,
+            gate_open_above_db=5.0,
+        ),
     ),
 }
 
 
-def matching_preset(values: dict[str, int]) -> str:
+def matching_preset(values: dict[str, float]) -> str:
     for key, (_, preset) in PERFORMANCE_PRESETS.items():
         if all(values.get(name) == value for name, value in preset.items()):
             return key

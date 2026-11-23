@@ -33,7 +33,6 @@ from voice_clone.audio import (
 from voice_clone.config import (
     CUSTOM_PRESET,
     PERFORMANCE_PRESETS,
-    PRESET_FIELDS,
     Settings,
     load_settings,
     matching_preset,
@@ -66,6 +65,11 @@ SLOW_MESSAGE = (
     "(try Light), then Start again."
 )
 DEFAULT_GATE = GateSettings()
+GATE_SETTING_NAMES = {
+    "hold_ms": "gate_hold_ms",
+    "pre_open_ms": "gate_pre_open_ms",
+    "open_above_floor_db": "gate_open_above_db",
+}
 DEFAULT_SETTINGS = Settings()
 ADVANCED_VOICE_FIELDS = (
     (
@@ -238,12 +242,12 @@ class MainScreen(Screen[None]):
                                     ),
                                     ("Custom: set on the Advanced tab", CUSTOM_PRESET),
                                 ],
-                                value=matching_preset(self._voice_options),
+                                value=matching_preset(self._preset_values()),
                                 allow_blank=False,
                                 id="preset-select",
                             ),
-                            "Pick what fits this computer. If the app says it is too slow, "
-                            "pick a lighter one.",
+                            "Pick what fits this computer. Sets every Advanced setting; if the "
+                            "app says it is too slow, pick a lighter one.",
                         )
                     with TabPane("Advanced", id="advanced-tab"):
                         for field in ADVANCED_VOICE_FIELDS:
@@ -342,6 +346,7 @@ class MainScreen(Screen[None]):
         name = next(name for field_id, _, name, *_ in GATE_FIELDS if field_id == event.input.id)
         value = float(event.value) if name == "open_above_floor_db" else int(event.value)
         self._apply_gate(replace(self._gate, **{name: value}))
+        self._sync_preset_select()
 
     @on(Input.Changed, ".voice-field Input")
     def _on_voice_option_changed(self, event: Input.Changed) -> None:
@@ -351,8 +356,7 @@ class MainScreen(Screen[None]):
         self._voice_options[name] = int(event.value)
         self._apply_voice_options()
         self._save_current_settings()
-        if name in PRESET_FIELDS:
-            self._sync_preset_select()
+        self._sync_preset_select()
 
     @on(Select.Changed, "#preset-select")
     def _on_preset_changed(self, event: Select.Changed) -> None:
@@ -360,14 +364,24 @@ class MainScreen(Screen[None]):
         if preset is None:
             return
         _, values = preset
-        self._voice_options.update(values)
-        for field_id, _, name, *_ in SPEED_FIELDS:
-            if name in values:
-                self.query_one(f"#{field_id}", Input).value = str(values[name])
+        self._voice_options.update({name: int(values[name]) for name in self._voice_options})
+        self._gate = GateSettings(
+            **{name: values[GATE_SETTING_NAMES[name]] for name in GATE_SETTING_NAMES}
+        )
+        for field_id, _, name, *_ in VOICE_FIELDS:
+            self.query_one(f"#{field_id}", Input).value = str(self._voice_options[name])
+        for field_id, _, name, *_ in GATE_FIELDS:
+            self.query_one(f"#{field_id}", Input).value = _format_number(getattr(self._gate, name))
+
+    def _preset_values(self) -> dict[str, float]:
+        gate = {setting: getattr(self._gate, name) for name, setting in GATE_SETTING_NAMES.items()}
+        return {**self._voice_options, **gate}
 
     def _sync_preset_select(self) -> None:
+        if not self.is_mounted:
+            return
         select = self.query_one("#preset-select", Select)
-        preset = matching_preset(self._voice_options)
+        preset = matching_preset(self._preset_values())
         if select.value != preset:
             select.value = preset
 
