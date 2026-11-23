@@ -388,3 +388,16 @@ def test_editing_any_advanced_value_switches_preset_to_custom(empty_environment,
         return app.screen.query_one("#preset-select").value
 
     assert _run(body) == "custom"
+
+
+def test_minimal_preset_is_first_and_sets_lowest_values(empty_environment):
+    async def body(app, pilot):
+        select = app.screen.query_one("#preset-select")
+        first = next(value for _, value in select._options if isinstance(value, str))
+        select.value = "minimal"
+        await pilot.pause()
+        return first
+
+    assert _run(body) == "minimal"
+    saved = config.load_settings()
+    assert (saved.index_percent, saved.context_ms, saved.block_ms) == (0, 200, 1000)

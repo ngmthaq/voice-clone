@@ -40,22 +40,22 @@ The defaults are a good place to start. If the voice should sound more like the 
 
 On the **Simple** tab, **Performance** sets every setting on the Advanced tab to fit the computer:
 
-| Setting | Light | Balanced (default) | High | Ultra |
-| --- | --- | --- | --- | --- |
-| For | laptop or older GPU (e.g. GeForce MX), or no GPU | mid-range GPU or Apple M-series | fast GPU | high-end GPU |
-| Index voice (%) | 40 | 50 | 55 | 60 |
-| Protect consonants (%) | 75 | 67 | 60 | 50 |
-| Follow mic volume (%) | 60 | 50 | 45 | 40 |
-| Pitch smoothing (ms) | 50 | 30 | 25 | 20 |
-| Context (ms) | 300 | 1000 | 1500 | 2000 |
-| Block size (ms) | 600 | 400 | 300 | 200 |
-| Crossfade (ms) | 60 | 80 | 80 | 60 |
-| Hum filter (Hz) | 90 | 90 | 90 | 90 |
-| Hold (ms) | 300 | 500 | 500 | 600 |
-| Open early (ms) | 100 | 100 | 100 | 100 |
-| Above noise (dB) | 8 | 6 | 6 | 5 |
+| Setting | Minimal | Light | Balanced (default) | High | Ultra |
+| --- | --- | --- | --- | --- | --- |
+| For | no GPU, or Light is still too slow | laptop or older GPU (e.g. GeForce MX) | mid-range GPU or Apple M-series | fast GPU | high-end GPU |
+| Index voice (%) | 0 | 40 | 50 | 55 | 60 |
+| Protect consonants (%) | 80 | 75 | 67 | 60 | 50 |
+| Follow mic volume (%) | 60 | 60 | 50 | 45 | 40 |
+| Pitch smoothing (ms) | 60 | 50 | 30 | 25 | 20 |
+| Context (ms) | 200 | 300 | 1000 | 1500 | 2000 |
+| Block size (ms) | 1000 | 600 | 400 | 300 | 200 |
+| Crossfade (ms) | 40 | 60 | 80 | 80 | 60 |
+| Hum filter (Hz) | 90 | 90 | 90 | 90 | 90 |
+| Hold (ms) | 200 | 300 | 500 | 500 | 600 |
+| Open early (ms) | 100 | 100 | 100 | 100 | 100 |
+| Above noise (dB) | 10 | 8 | 6 | 6 | 5 |
 
-Context, Block size and Crossfade decide most of the speed. Index voice adds a search on every block. While the noise gate is closed the model does not run, so a shorter Hold and a higher Above noise save work in pauses. With less context, pitch and consonants are less steady, so lighter presets smooth pitch more and keep more of your live consonants. Hum filter and Open early cost the same at any value, so they are the same in every preset.
+Context, Block size and Crossfade decide most of the speed. Index voice adds a search on every block; at 0 (Minimal) the search is skipped. While the noise gate is closed the model does not run, so a shorter Hold and a higher Above noise save work in pauses. With less context, pitch and consonants are less steady, so lighter presets smooth pitch more and keep more of your live consonants. Hum filter and Open early cost the same at any value, so they are the same in every preset.
 
 A higher preset gives less delay and clearer words, but needs a faster computer. If the app says "Too slow for this computer", pick a lighter one. Picking a preset replaces any Advanced settings you changed. Changing any value on the Advanced tab afterwards shows **Custom**.
 
@@ -74,7 +74,7 @@ These are on the **Advanced** tab, under **Speed and delay**.
 
 The voice must be converted faster than you speak. On a weak graphics card (for example a laptop GeForce MX series) or on the CPU, the defaults can be too slow. The app then says "Too slow for this computer" while it runs. To fix it:
 
-1. Stop and set **Performance** on the Simple tab to **Light**. If that keeps up, try **Balanced** later.
+1. Stop and set **Performance** on the Simple tab to **Light**. If it still says too slow, pick **Minimal** (more delay, and the `.index` file is not used). If Light keeps up, try **Balanced** later.
 2. On a laptop, plug in the charger and set Windows power mode to **Best performance**.
 3. In the NVIDIA Control Panel (Manage 3D settings → Program settings), set Python to use the **High-performance NVIDIA processor**.
 4. Close other programs that use the graphics card (games, browsers with many video tabs).

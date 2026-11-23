@@ -81,8 +81,22 @@ def _preset(**values: float) -> dict[str, float]:
 
 
 PERFORMANCE_PRESETS: dict[str, tuple[str, dict[str, float]]] = {
+    "minimal": (
+        "Minimal: no GPU, or Light is still too slow (most delay)",
+        _preset(
+            index_percent=0,
+            protect_percent=80,
+            loudness_percent=60,
+            pitch_smoothing_ms=60,
+            context_ms=200,
+            block_ms=1000,
+            crossfade_ms=40,
+            gate_hold_ms=200,
+            gate_open_above_db=10.0,
+        ),
+    ),
     "light": (
-        "Light: laptop or older GPU, or no GPU (more delay)",
+        "Light: laptop or older GPU (more delay)",
         _preset(
             index_percent=40,
             protect_percent=75,
