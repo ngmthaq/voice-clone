@@ -170,7 +170,7 @@ def _run_bench_command(args: argparse.Namespace) -> int:
     except KeyboardInterrupt:
         return EXIT_INTERRUPTED
     if fitting:
-        print(f"Recommended: {fitting[-1]} (heaviest preset up to High with p95 under 0.7)")
+        print(f"Recommended: {fitting[-1]} (heaviest preset up to Balanced with p95 under 0.7)")
     else:
         print("None of these presets keeps up comfortably (p95 under 0.7).")
     return 0

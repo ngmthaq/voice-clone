@@ -40,12 +40,12 @@ The defaults are a good place to start. If the voice should sound more like the 
 
 On the **Simple** tab, **Performance** sets every setting on the Advanced tab to fit the computer.
 
-The easiest way to pick one: on the start screen choose **Check setup**, then **Measure speed**. It converts made-up speech with each preset (up to a minute) and saves the heaviest one up to **High** that your computer keeps up with. It never picks **Ultra**: its short blocks give the least delay but can sound worse, so choose it yourself if delay matters most. On a computer without a usable GPU, the voice changer starts on **Minimal** until you choose something else.
+The easiest way to pick one: on the start screen choose **Check setup**, then **Measure speed**. It converts made-up speech with each preset (up to a minute) and saves the heaviest one up to **Balanced** that your computer keeps up with. It never picks **High** or **Ultra**: their shorter blocks give less delay but can sound worse, so choose them yourself if delay matters most. On a computer without a usable GPU, the voice changer starts on **Minimal** until you choose something else.
 
 
 | Setting | Minimal | Light | Balanced (default) | High | Ultra |
 | --- | --- | --- | --- | --- | --- |
-| For | no GPU, or Light is still too slow | laptop or older GPU (e.g. GeForce MX) | mid-range GPU | fast GPU or Apple M-series | high-end GPU |
+| For | no GPU, or Light is still too slow | laptop or older GPU (e.g. GeForce MX) | mid-range GPU or Apple M-series (best sound) | fast GPU, less delay | high-end GPU, least delay |
 | Index voice (%) | 0 | 40 | 50 | 55 | 60 |
 | Protect consonants (%) | 80 | 75 | 67 | 60 | 50 |
 | Follow mic volume (%) | 60 | 60 | 50 | 45 | 40 |
@@ -92,7 +92,7 @@ To see which preset your computer can run, without a microphone:
 python -m voice_clone bench
 ```
 
-It converts made-up speech with each preset and prints the **Load** (time to convert a block ÷ block length). Under 1.0 keeps up; pick the heaviest preset up to High with a Load under about 0.7, so there is room for pauses in your computer's other work. `p95` is the load of the slowest blocks, and `Slow` counts blocks that took longer than real time. The last column shows where the time goes (encode, index, pitch, synth). Add `--cpu` to test without the graphics card, or `--preset light` to test one preset.
+It converts made-up speech with each preset and prints the **Load** (time to convert a block ÷ block length). Under 1.0 keeps up; pick the heaviest preset up to Balanced with a Load under about 0.7, so there is room for pauses in your computer's other work. `p95` is the load of the slowest blocks, and `Slow` counts blocks that took longer than real time. The last column shows where the time goes (encode, index, pitch, synth). Add `--cpu` to test without the graphics card, or `--preset light` to test one preset.
 
 On an NVIDIA card from the GeForce 16 or RTX series on, the voice model runs in half precision (fp16), which is faster and uses less graphics memory. Older cards (GeForce 10 series and before) stay at full precision (fp32), because fp16 is slow on them. **Check setup** shows which one your card uses. To choose yourself, add `precision = "fp16"` or `precision = "fp32"` to the settings file (below); `"auto"` is the default. `fp16` also works on Apple GPUs (a little faster there); the CPU always uses fp32. To compare, run `python -m voice_clone bench --precision fp16` and `--precision fp32`.
 

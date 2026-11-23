@@ -133,16 +133,11 @@ def test_measure_and_save_needs_a_voice(measure_environment, monkeypatch, tmp_pa
         bench.measure_and_save()
 
 
-def test_auto_presets_stop_at_high():
-    assert list(bench.auto_presets(PERFORMANCE_PRESETS)) == [
-        "minimal",
-        "light",
-        "balanced",
-        "high",
-    ]
+def test_auto_presets_stop_at_balanced():
+    assert list(bench.auto_presets(PERFORMANCE_PRESETS)) == ["minimal", "light", "balanced"]
 
 
-def test_measure_and_save_never_picks_ultra(measure_environment, monkeypatch):
+def test_measure_and_save_never_picks_above_balanced(measure_environment, monkeypatch):
     from voice_clone.config import load_settings
 
     measured = _fake_loads(
@@ -152,6 +147,6 @@ def test_measure_and_save_never_picks_ultra(measure_environment, monkeypatch):
 
     best, _ = bench.measure_and_save()
 
-    assert best == "high"
-    assert "ultra" not in measured
-    assert load_settings().block_ms == 300
+    assert best == "balanced"
+    assert measured == ["minimal", "light", "balanced"]
+    assert load_settings().block_ms == 400

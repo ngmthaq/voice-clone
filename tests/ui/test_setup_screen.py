@@ -267,8 +267,8 @@ def test_measure_speed_saves_the_best_preset_and_says_so(environment, monkeypatc
     def fake_measure(on_result=None):
         calls.append(True)
         result = setup_screen.bench.BenchResult(300, [0.5, 0.5])
-        on_result("high", result)
-        return "high", {"high": result}
+        on_result("balanced", result)
+        return "balanced", {"balanced": result}
 
     monkeypatch.setattr(setup_screen.bench, "measure_and_save", fake_measure)
 
@@ -283,7 +283,7 @@ def test_measure_speed_saves_the_best_preset_and_says_so(environment, monkeypatc
 
     assert shown and calls and not disabled
     assert status == (
-        "This computer keeps up with High (load 0.50). Saved: the Voice changer now uses it."
+        "This computer keeps up with Balanced (load 0.50). Saved: the Voice changer now uses it."
     )
 
 
