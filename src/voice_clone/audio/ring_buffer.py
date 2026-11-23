@@ -48,6 +48,16 @@ class RingBuffer:
             self._count -= take
         return out
 
+    def trim(self, max_samples: int) -> int:
+        """Drop the oldest samples so at most `max_samples` stay; return how many were dropped."""
+        with self._lock:
+            excess = self._count - max(0, max_samples)
+            if excess <= 0:
+                return 0
+            self._read_pos = (self._read_pos + excess) % self._capacity
+            self._count -= excess
+            return excess
+
     def clear(self) -> None:
         with self._lock:
             self._read_pos = 0

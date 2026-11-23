@@ -60,3 +60,19 @@ def test_clear_empties_buffer():
 def test_non_positive_capacity_is_rejected():
     with pytest.raises(ValueError):
         RingBuffer(0)
+
+
+def test_trim_drops_oldest_samples_beyond_limit():
+    buffer = RingBuffer(8)
+    buffer.write(np.arange(6, dtype=np.float32))
+
+    assert buffer.trim(2) == 4
+    assert buffer.read(4).tolist() == [4.0, 5.0, 0.0, 0.0]
+
+
+def test_trim_below_limit_keeps_everything():
+    buffer = RingBuffer(8)
+    buffer.write(np.ones(3, dtype=np.float32))
+
+    assert buffer.trim(5) == 0
+    assert buffer.available == 3

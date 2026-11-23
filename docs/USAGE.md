@@ -37,6 +37,17 @@ Keys: `space` start or stop, `esc` back to the start screen (this stops the voic
 
 The defaults are a good place to start. If the voice should sound more like the trained voice, raise Index to 75. On a fast computer, try Context 1500. On the Advanced tab, "Reset voice match to defaults" puts the four advanced settings back (Index voice keeps its value).
 
+## If the voice lags, drops or comes late
+
+The voice must be converted faster than you speak. On a weak graphics card (for example a laptop GeForce MX series) or on the CPU, the defaults can be too slow. The app then says "Too slow for this computer" while it runs. To fix it:
+
+1. Stop, open the **Advanced** tab and lower **Context (ms)**: try 300, then 500 if it keeps up. This is the setting that changes the speed most.
+2. On a laptop, plug in the charger and set Windows power mode to **Best performance**.
+3. In the NVIDIA Control Panel (Manage 3D settings → Program settings), set Python to use the **High-performance NVIDIA processor**.
+4. Close other programs that use the graphics card (games, browsers with many video tabs).
+
+Some delay always remains: the voice is converted in 0.4-second blocks, so expect about 0.5 to 1 second.
+
 ## Logs
 
 The app never prints to the terminal. Logs are written to the user log folder:

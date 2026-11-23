@@ -264,3 +264,26 @@ def test_all_settings_are_disabled_while_running(empty_environment):
         return len(settings) > 10, locked, stop_enabled, unlocked
 
     assert _run(body) == (True, True, True, True)
+
+
+def test_slow_conversion_shows_warning(empty_environment):
+    class SlowPipeline:
+        load = 1.3
+        dropped_blocks = 4
+
+        def stop(self):
+            pass
+
+    async def body(app, pilot):
+        app.screen._pipeline = SlowPipeline()
+        app.screen._converting = True
+        await pilot.pause(0.3)
+        status = str(app.screen.query_one("#status").render())
+        app.screen._converting = False
+        app.screen._pipeline = None
+        return status
+
+    status = _run(body)
+    assert "Too slow" in status
+    assert "130%" in status
+    assert "4 block(s) dropped" in status

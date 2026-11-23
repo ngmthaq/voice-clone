@@ -85,6 +85,9 @@ class RvcEngine:
     ) -> None:
         self._base_models = base_models
         self._device = device if device is not None else _default_device()
+        if self._device.type == "cuda":
+            # Every block has the same length, so let cuDNN pick its fastest kernels once.
+            torch.backends.cudnn.benchmark = True
         self._content_encoder = content_encoder
         self._pitch_extractor = pitch_extractor
         self._voice: _LoadedVoice | None = None

@@ -1,6 +1,7 @@
 import logging
 import queue
 import threading
+import time
 from collections.abc import Callable
 from typing import Any, Protocol
 
@@ -20,10 +21,15 @@ LevelCallback = Callable[[float, float], None]
 ErrorCallback = Callable[[Exception], None]
 
 ENGINE_INPUT_RATE = 16000
-# Small on purpose: if conversion falls behind, drop audio instead of building a delay
-# that keeps playing after you stop talking.
-QUEUE_BLOCKS = 3
+# Small on purpose: if conversion falls behind, drop the oldest audio instead of building a
+# delay that keeps playing after you stop talking.
+QUEUE_BLOCKS = 2
 RING_BLOCKS = 4
+# Converted audio waiting to be played is capped at this many blocks. The microphone and the
+# output device run on separate clocks, so without a cap the delay slowly grows.
+MAX_OUTPUT_BACKLOG_BLOCKS = 2
+# How fast the measured load follows new blocks (0-1; higher reacts faster).
+LOAD_SMOOTHING = 0.3
 FIFO_PRIME_MS = 50
 OUTPUT_PRIME_MS = 40
 POLL_SECONDS = 0.1
@@ -65,6 +71,7 @@ class ConversionPipeline:
         self._output_rate = int(output_device.default_samplerate)
         self._engine_in_rate = engine.input_sample_rate
         self._engine_out_rate = engine.output_sample_rate
+        self._block_seconds = block_ms / 1000
         self._input_frames = self._input_rate * block_ms // 1000
         self._output_frames = self._output_rate * block_ms // 1000
         self._hop = self._engine_in_rate * block_ms // 1000
@@ -79,6 +86,9 @@ class ConversionPipeline:
         self._streams: list[Any] = []
         self.dropped_blocks = 0
         self._reported_drops = 0
+        # Conversion time divided by the audio length (smoothed). Above 1.0 the computer is
+        # too slow for the current settings and audio gets dropped.
+        self.load = 0.0
 
         self._reset_state()
 
@@ -100,6 +110,7 @@ class ConversionPipeline:
         self._reset_state()
         self.dropped_blocks = 0
         self._reported_drops = 0
+        self.load = 0.0
         self._stop_event.clear()
         self._open_streams()
         self._worker = threading.Thread(
@@ -262,14 +273,30 @@ class ConversionPipeline:
             ) from exc
         self._streams = opened
 
-    def _input_callback(self, indata: np.ndarray, frames: int, time: Any, status: Any) -> None:
+    def _input_callback(self, indata: np.ndarray, frames: int, time_info: Any, status: Any) -> None:
+        block = indata[:, 0].copy()
         try:
-            self._queue.put_nowait(indata[:, 0].copy())
+            self._queue.put_nowait(block)
         except queue.Full:
+            # Behind: throw away the oldest waiting block, so what is played stays recent.
             self.dropped_blocks += 1
+            try:
+                self._queue.get_nowait()
+            except queue.Empty:
+                pass
+            try:
+                self._queue.put_nowait(block)
+            except queue.Full:
+                pass
 
-    def _output_callback(self, outdata: np.ndarray, frames: int, time: Any, status: Any) -> None:
+    def _output_callback(
+        self, outdata: np.ndarray, frames: int, time_info: Any, status: Any
+    ) -> None:
         outdata[:] = self._ring.read(frames)[:, None]
+
+    def _update_load(self, seconds: float) -> None:
+        ratio = seconds / self._block_seconds
+        self.load = self.load + LOAD_SMOOTHING * (ratio - self.load) if self.load else ratio
 
     def _report_drops(self) -> None:
         dropped = self.dropped_blocks
@@ -288,8 +315,11 @@ class ConversionPipeline:
             except queue.Empty:
                 continue
             try:
+                started = time.perf_counter()
                 output = self.process_block(block)
+                self._update_load(time.perf_counter() - started)
                 self._ring.write(output)
+                self._ring.trim(self._output_frames * MAX_OUTPUT_BACKLOG_BLOCKS)
                 self._report_drops()
                 if self._on_levels is not None:
                     self._on_levels(_rms(block), _rms(output))

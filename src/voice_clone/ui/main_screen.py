@@ -51,6 +51,12 @@ NO_VOICES_MESSAGE = (
     "No voices found. Go back (Esc) and choose 'Train a voice', "
     "or put a voice in voices/<name>/model.pth"
 )
+# Above this load (conversion time / audio length) the voice will soon start to drop.
+SLOW_LOAD = 0.9
+SLOW_MESSAGE = (
+    "Too slow for this computer: converting takes {percent}% of real time{dropped}, so the "
+    "voice lags and drops. Stop, lower Context on the Advanced tab (try 300), then Start again."
+)
 DEFAULT_GATE = GateSettings()
 DEFAULT_SETTINGS = Settings()
 DEFAULT_INDEX_PERCENT = DEFAULT_SETTINGS.index_percent
@@ -164,6 +170,7 @@ class MainScreen(Screen[None]):
         self._input_level = 0.0
         self._output_level = 0.0
         self._pipeline_error: Exception | None = None
+        self._slow_warned = False
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -471,6 +478,7 @@ class MainScreen(Screen[None]):
         self._pipeline = pipeline
         self._working = False
         self._converting = True
+        self._slow_warned = False
         self._set_status("Running", "running")
         self._refresh_controls()
 
@@ -509,6 +517,25 @@ class MainScreen(Screen[None]):
             self._working = True
             self._refresh_controls()
             self._stop_after_error(str(error) or type(error).__name__)
+            return
+        self._warn_if_too_slow()
+
+    def _warn_if_too_slow(self) -> None:
+        pipeline = self._pipeline
+        if pipeline is None or not self._converting or self._slow_warned:
+            return
+        dropped = pipeline.dropped_blocks
+        if pipeline.load < SLOW_LOAD and not dropped:
+            return
+        self._slow_warned = True
+        logger.warning("Conversion too slow: load %.2f, dropped %d", pipeline.load, dropped)
+        self._set_status(
+            SLOW_MESSAGE.format(
+                percent=round(pipeline.load * 100),
+                dropped=f", {dropped} block(s) dropped" if dropped else "",
+            ),
+            "warning",
+        )
 
     def _change_pitch(self, value: int) -> None:
         self._pitch = max(MIN_PITCH, min(MAX_PITCH, value))

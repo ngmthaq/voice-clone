@@ -323,3 +323,33 @@ def test_pipeline_asks_engine_only_for_hop_plus_crossfade():
     pipeline.process_block(_block(pipeline, 48000))
 
     assert set(engine.tails) == {16000 * (400 + 80) // 1000}
+
+
+def test_full_queue_drops_oldest_block_and_keeps_newest(fake_engine):
+    pipeline = _make(fake_engine)
+    blocks = [np.full((10, 1), float(i), dtype=np.float32) for i in range(4)]
+
+    for block in blocks:
+        pipeline._input_callback(block, 10, None, None)
+
+    queued = [pipeline._queue.get_nowait()[0] for _ in range(pipeline._queue.qsize())]
+    assert queued == [2.0, 3.0]
+    assert pipeline.dropped_blocks == 2
+
+
+def test_worker_caps_output_backlog_and_measures_load(fake_engine, fake_sd):
+    levels = threading.Event()
+    pipeline = _make(fake_engine, on_levels=lambda i, o: levels.set())
+    pipeline._ring.write(np.ones(pipeline._output_frames * 3, dtype=np.float32))
+    pipeline.start()
+    try:
+        pipeline._ring.write(np.ones(pipeline._output_frames * 3, dtype=np.float32))
+        FakeStream.instances[0].callback(
+            np.full((19200, 1), 0.1, dtype=np.float32), 19200, None, None
+        )
+        assert levels.wait(timeout=5)
+
+        assert pipeline._ring.available <= pipeline._output_frames * 2
+        assert pipeline.load > 0
+    finally:
+        pipeline.stop()
