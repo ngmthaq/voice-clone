@@ -94,18 +94,6 @@ def test_invalid_gate_value_is_not_saved(empty_environment):
     assert config.load_settings().gate_pre_open_ms == 100
 
 
-def test_reset_restores_gate_defaults(empty_environment, tmp_path):
-    (tmp_path / "settings.toml").write_text("gate_hold_ms = 900\ngate_open_above_db = 12.0\n")
-
-    async def body(app, pilot):
-        app.screen.query_one("#gate-reset").press()
-        await pilot.pause()
-        return app.screen.query_one("#gate-hold").value
-
-    assert _run(body) == "500"
-    assert config.load_settings().gate_open_above_db == 6.0
-
-
 def test_disabled_button_does_not_change_on_hover(empty_environment):
     async def body(app, pilot):
         button = app.screen.query_one("#start-button")
@@ -208,24 +196,65 @@ def test_voice_match_changes_apply_to_running_engine_and_pipeline(empty_environm
     assert _run(body) == (0.5, 1.0, 40, 1500)
 
 
-def test_voice_reset_restores_advanced_defaults_and_keeps_index(empty_environment, tmp_path):
+def test_advanced_reset_restores_all_advanced_defaults(empty_environment, tmp_path):
     (tmp_path / "settings.toml").write_text(
-        "index_percent = 90\nprotect_percent = 10\ncontext_ms = 1500\n"
+        "index_percent = 90\nprotect_percent = 10\ncontext_ms = 300\nblock_ms = 200\n"
+        "hum_filter_hz = 0\ngate_hold_ms = 900\ngate_open_above_db = 12.0\n"
     )
 
     async def body(app, pilot):
         app.screen.query_one("#tabs").active = "advanced-tab"
         await pilot.pause()
-        await pilot.click("#voice-reset")
+        app.screen.query_one("#advanced-reset").press()
+        await pilot.pause()
+        return app.screen.query_one("#gate-hold").value
+
+    assert _run(body) == "500"
+
+    saved = config.load_settings()
+    assert (
+        saved.index_percent,
+        saved.protect_percent,
+        saved.context_ms,
+        saved.block_ms,
+        saved.hum_filter_hz,
+        saved.gate_hold_ms,
+        saved.gate_open_above_db,
+    ) == (50, 67, 1000, 400, 90, 500, 6.0)
+
+
+@pytest.mark.parametrize(
+    "field_id, name, value",
+    [
+        ("block-ms", "block_ms", 250),
+        ("crossfade-ms", "crossfade_ms", 40),
+        ("hum-filter-hz", "hum_filter_hz", 0),
+    ],
+)
+def test_speed_value_is_saved(empty_environment, field_id, name, value):
+    async def body(app, pilot):
+        app.screen.query_one(f"#{field_id}").value = str(value)
+        await pilot.pause()
+
+    _run(body)
+
+    assert getattr(config.load_settings(), name) == value
+
+
+def test_voice_changer_keeps_saved_training_options(empty_environment, tmp_path):
+    (tmp_path / "settings.toml").write_text('train_name = "alex"\ntrain_epochs = 77\n')
+
+    async def body(app, pilot):
+        app.screen.query_one("#context-ms").value = "500"
         await pilot.pause()
 
     _run(body)
 
     saved = config.load_settings()
-    assert (saved.index_percent, saved.protect_percent, saved.context_ms) == (90, 67, 1000)
+    assert (saved.train_name, saved.train_epochs, saved.context_ms) == ("alex", 77, 500)
 
 
-def test_simple_tab_is_shown_first_with_devices_and_index(empty_environment):
+def test_simple_tab_is_shown_first_with_devices_and_pitch(empty_environment):
     async def body(app, pilot):
         tabs = app.screen.query_one("#tabs")
         pane = app.screen.query_one("#simple-tab")
@@ -234,7 +263,7 @@ def test_simple_tab_is_shown_first_with_devices_and_index(empty_environment):
             for selector in ("#input-select", "#pitch-row", "#index-percent")
         ]
 
-    assert _run(body) == ("simple-tab", [True, True, True])
+    assert _run(body) == ("simple-tab", [True, True, False])
 
 
 def test_advanced_tab_holds_voice_match_and_gate(empty_environment):
@@ -242,10 +271,10 @@ def test_advanced_tab_holds_voice_match_and_gate(empty_environment):
         pane = app.screen.query_one("#advanced-tab")
         return [
             bool(pane.query(f"#{field_id}"))
-            for field_id in ("protect-percent", "context-ms", "gate-hold")
+            for field_id in ("index-percent", "protect-percent", "context-ms", "gate-hold")
         ]
 
-    assert _run(body) == [True, True, True]
+    assert _run(body) == [True, True, True, True]
 
 
 def test_all_settings_are_disabled_while_running(empty_environment):

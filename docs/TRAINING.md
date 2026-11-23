@@ -74,7 +74,7 @@ You can train in the app or with a command. Both do the same thing.
 1. Run `python -m voice_clone run` (on macOS, `caffeinate -i python -m voice_clone run` keeps the Mac awake while training runs).
 2. Choose **Train a voice** on the start screen.
 3. In **Recordings**, type the path of the `raw/` folder or the audio files, or drag them in from Finder or Explorer. Separate several paths with spaces, and put quotes around a path that has spaces in it.
-4. Set **Voice name**, and **Epochs** if you want (for example 100).
+4. Set **Voice name**, and if you want **Epochs** (for example 100), **Batch size**, **Save every (epochs)** and **Sample rate**. The app remembers these for next time.
 5. Press **Start training**. The screen shows each step, a progress bar with the current epoch, and Applio's output.
 
 While training runs, `esc` does not leave the screen: press **Stop training** first. When training ends, the new voice is in the **Voice** list of the voice changer.

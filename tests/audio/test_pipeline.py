@@ -353,3 +353,16 @@ def test_worker_caps_output_backlog_and_measures_load(fake_engine, fake_sd):
         assert pipeline.load > 0
     finally:
         pipeline.stop()
+
+
+def test_hum_filter_zero_turns_it_off(fake_engine):
+    pipeline = _make(fake_engine, hum_filter_hz=0)
+    audio = _tone(50)
+
+    assert np.array_equal(pipeline._remove_hum(audio), audio)
+
+
+def test_crossfade_is_never_longer_than_a_block(fake_engine):
+    pipeline = _make(fake_engine, block_ms=100, crossfade_ms=200)
+
+    assert pipeline._crossfade_samples == pipeline._hop

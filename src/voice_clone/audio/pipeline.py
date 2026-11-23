@@ -29,7 +29,6 @@ FIFO_PRIME_MS = 50
 OUTPUT_PRIME_MS = 40
 POLL_SECONDS = 0.1
 JOIN_SECONDS = 5.0
-HUM_FILTER_HZ = 90
 HUM_FILTER_ORDER = 8
 MIN_CONTEXT_MS = 200
 MAX_CONTEXT_MS = 2000
@@ -53,6 +52,7 @@ class ConversionPipeline:
         block_ms: int = 400,
         context_ms: int = 1000,
         crossfade_ms: int = 80,
+        hum_filter_hz: int = 90,
         gate_settings: GateSettings | None = None,
     ) -> None:
         self._engine = engine
@@ -70,7 +70,8 @@ class ConversionPipeline:
         self._output_frames = self._output_rate * block_ms // 1000
         self._hop = self._engine_in_rate * block_ms // 1000
         self._context_samples = self._context_length(context_ms)
-        self._crossfade_samples = self._engine_in_rate * crossfade_ms // 1000
+        self._crossfade_samples = self._engine_in_rate * min(crossfade_ms, block_ms) // 1000
+        self._hum_filter_hz = hum_filter_hz
         self._engine_ratio = self._engine_out_rate / self._engine_in_rate
 
         self._queue: queue.Queue[np.ndarray] = queue.Queue(maxsize=QUEUE_BLOCKS)
@@ -157,7 +158,7 @@ class ConversionPipeline:
         return self._take_output_block(resampled)
 
     def _remove_hum(self, audio: np.ndarray) -> np.ndarray:
-        if len(audio) == 0:
+        if len(audio) == 0 or self._hum_sos is None:
             return audio
         filtered, self._hum_state = sosfilt(self._hum_sos, audio, zi=self._hum_state)
         return filtered.astype(np.float32, copy=False)
@@ -195,10 +196,19 @@ class ConversionPipeline:
         self._output_resampler = soxr.ResampleStream(
             self._engine_out_rate, self._output_rate, 1, dtype="float32"
         )
-        self._hum_sos = butter(
-            HUM_FILTER_ORDER, HUM_FILTER_HZ, btype="highpass", fs=self._engine_in_rate, output="sos"
+        self._hum_sos = (
+            butter(
+                HUM_FILTER_ORDER,
+                self._hum_filter_hz,
+                btype="highpass",
+                fs=self._engine_in_rate,
+                output="sos",
+            )
+            if self._hum_filter_hz > 0
+            else None
         )
-        self._hum_state = np.zeros((self._hum_sos.shape[0], 2))
+        sections = 0 if self._hum_sos is None else self._hum_sos.shape[0]
+        self._hum_state = np.zeros((sections, 2))
         self._gate = NoiseGate(self._engine_in_rate, self._gate_settings)
         self._last_hop_silent = False
         self._history = np.zeros(self._context_samples, dtype=np.float32)

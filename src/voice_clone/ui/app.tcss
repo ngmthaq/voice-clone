@@ -131,13 +131,10 @@ HomeScreen {
     height: auto;
 }
 
-/* One empty line between the tab bar and the first setting, on every tab. */
+/* One empty line between the tab bar and the first setting; no side padding, so every
+   setting lines up with the tab bar and the Start button. */
 #tabs TabPane {
-    padding: 1 1 0 1;
-}
-
-#tabs TabPane > .section-title:first-child {
-    margin-top: 0;
+    padding: 1 0 0 0;
 }
 
 #controls {
@@ -160,6 +157,15 @@ HomeScreen {
     width: 100%;
 }
 
+/* No side borders, so a box is exactly as wide as the buttons. Padding keeps the text
+   where the border used to push it. */
+.field Input,
+.field SelectCurrent {
+    border-left: none;
+    border-right: none;
+    padding: 0 3;
+}
+
 .hint {
     color: $text-muted;
     text-style: italic;
@@ -178,20 +184,13 @@ HomeScreen {
     min-width: 5;
 }
 
-/* An Input's left border has the background colour, so its box starts one cell in.
-   Indent the pitch buttons the same so they line up with the inputs. */
-#pitch-down {
-    margin-left: 1;
-}
-
 #pitch-label {
     width: 9;
     height: 3;
     content-align: center middle;
 }
 
-#voice-reset,
-#gate-reset {
+#advanced-reset {
     width: 100%;
 }
 

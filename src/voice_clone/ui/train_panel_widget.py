@@ -13,6 +13,7 @@ from textual.containers import Vertical
 from textual.validation import Number, Regex
 from textual.widgets import Button, Checkbox, Input, ProgressBar, RichLog, Select, Static
 
+from voice_clone.config import load_settings, save_settings
 from voice_clone.errors import TrainingStoppedError, VoiceCloneError
 from voice_clone.paths import training_dir, voices_dir
 from voice_clone.training import (
@@ -58,6 +59,7 @@ class TrainPanelWidget(Vertical):
         self._stopping = False
         self._target_epochs = DEFAULT_OPTIONS.epochs
         self._voice_name = DEFAULT_OPTIONS.name
+        self._settings = load_settings()
 
     @property
     def running(self) -> bool:
@@ -73,7 +75,7 @@ class TrainPanelWidget(Vertical):
         yield from labeled_field(
             "Voice name",
             Input(
-                DEFAULT_OPTIONS.name,
+                self._settings.train_name,
                 validators=[Regex(NAME_PATTERN.pattern)],
                 id="train-name",
             ),
@@ -82,7 +84,8 @@ class TrainPanelWidget(Vertical):
         yield from labeled_field(
             "Epochs",
             Input(
-                str(DEFAULT_OPTIONS.epochs),
+                str(self._settings.train_epochs),
+                placeholder=f"default {DEFAULT_OPTIONS.epochs}",
                 type="integer",
                 validators=[Number(minimum=1, maximum=MAX_EPOCHS)],
                 id="train-epochs",
@@ -92,7 +95,8 @@ class TrainPanelWidget(Vertical):
         yield from labeled_field(
             "Batch size",
             Input(
-                str(DEFAULT_OPTIONS.batch_size),
+                str(self._settings.train_batch_size),
+                placeholder=f"default {DEFAULT_OPTIONS.batch_size}",
                 type="integer",
                 validators=[Number(minimum=1, maximum=MAX_BATCH_SIZE)],
                 id="train-batch-size",
@@ -100,10 +104,25 @@ class TrainPanelWidget(Vertical):
             "Lower it to 4 if training runs out of memory",
         )
         yield from labeled_field(
+            "Save every (epochs)",
+            Input(
+                str(self._settings.train_save_every),
+                placeholder=f"default {DEFAULT_OPTIONS.save_every}",
+                type="integer",
+                validators=[Number(minimum=1, maximum=100)],
+                id="train-save-every",
+            ),
+            "How often a checkpoint is saved. A stopped run continues from the last one",
+        )
+        yield from labeled_field(
             "Sample rate",
             Select[int](
                 [(f"{rate} Hz", rate) for rate in SAMPLE_RATES],
-                value=DEFAULT_OPTIONS.sample_rate,
+                value=(
+                    self._settings.train_sample_rate
+                    if self._settings.train_sample_rate in SAMPLE_RATES
+                    else DEFAULT_OPTIONS.sample_rate
+                ),
                 allow_blank=False,
                 id="train-sample-rate",
             ),
@@ -184,16 +203,33 @@ class TrainPanelWidget(Vertical):
             epochs=_read_int(self.query_one("#train-epochs", Input), "Epochs"),
             sample_rate=int(self.query_one("#train-sample-rate", Select).value),  # type: ignore[arg-type]
             batch_size=_read_int(self.query_one("#train-batch-size", Input), "Batch size"),
+            save_every=_read_int(self.query_one("#train-save-every", Input), "Save every"),
             restart=self.query_one("#train-restart", Checkbox).value,
             force=self.query_one("#train-force", Checkbox).value,
         )
         validate_options(options)
+        self._save_options(options)
         if voice_exists(voices_dir(), name) and not options.force:
             raise VoiceCloneError(
                 f"A voice named '{name}' already exists. Tick 'Replace an existing voice' "
                 "or pick another name."
             )
         return options
+
+    def _save_options(self, options: TrainOptions) -> None:
+        settings = load_settings().model_copy(
+            update=dict(
+                train_name=options.name,
+                train_epochs=options.epochs,
+                train_batch_size=options.batch_size,
+                train_sample_rate=options.sample_rate,
+                train_save_every=options.save_every,
+            )
+        )
+        try:
+            save_settings(settings)
+        except OSError:
+            logger.warning("Could not save training settings", exc_info=True)
 
     @work(thread=True, exclusive=True, group="train")
     def _train(self, options: TrainOptions, runner: StreamingRunner) -> None:

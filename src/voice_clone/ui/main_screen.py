@@ -54,20 +54,20 @@ NO_VOICES_MESSAGE = (
 SLOW_LOAD = 0.9
 SLOW_MESSAGE = (
     "Too slow for this computer: converting takes {percent}% of real time{dropped}, so the "
-    "voice lags and drops. Stop, lower Context on the Advanced tab (try 300), then Start again."
+    "voice lags and drops. Stop, lower Context under Speed and delay on the Advanced tab "
+    "(try 300), then Start again."
 )
 DEFAULT_GATE = GateSettings()
 DEFAULT_SETTINGS = Settings()
-DEFAULT_INDEX_PERCENT = DEFAULT_SETTINGS.index_percent
-INDEX_FIELD = (
-    "index-percent",
-    "Index voice (%)",
-    "index_percent",
-    0,
-    100,
-    "0 = your live voice, 100 = the trained voice (closer match, less clear)",
-)
 ADVANCED_VOICE_FIELDS = (
+    (
+        "index-percent",
+        "Index voice (%)",
+        "index_percent",
+        0,
+        100,
+        "0 = your live voice, 100 = the trained voice (closer match, less clear)",
+    ),
     (
         "protect-percent",
         "Protect consonants (%)",
@@ -92,6 +92,8 @@ ADVANCED_VOICE_FIELDS = (
         200,
         "Removes pitch jumps that sound like a wobble. 0 = off",
     ),
+)
+SPEED_FIELDS = (
     (
         "context-ms",
         "Context (ms)",
@@ -100,8 +102,32 @@ ADVANCED_VOICE_FIELDS = (
         2000,
         "More = clearer words, no extra delay, but more CPU/GPU. Lower it if audio drops",
     ),
+    (
+        "block-ms",
+        "Block size (ms)",
+        "block_ms",
+        100,
+        1000,
+        "Audio is converted in blocks this long. Smaller = less delay, but more CPU/GPU",
+    ),
+    (
+        "crossfade-ms",
+        "Crossfade (ms)",
+        "crossfade_ms",
+        10,
+        200,
+        "Blends one block into the next. Raise it if you hear clicks between blocks",
+    ),
+    (
+        "hum-filter-hz",
+        "Hum filter (Hz)",
+        "hum_filter_hz",
+        0,
+        200,
+        "Cuts mains hum and rumble below this pitch. 0 = off",
+    ),
 )
-VOICE_FIELDS = (INDEX_FIELD, *ADVANCED_VOICE_FIELDS)
+VOICE_FIELDS = (*ADVANCED_VOICE_FIELDS, *SPEED_FIELDS)
 GATE_FIELDS = (
     (
         "gate-hold",
@@ -194,15 +220,11 @@ class MainScreen(Screen[None]):
                                 id="pitch-row",
                             ),
                         )
-                        yield from self._voice_field(INDEX_FIELD)
                     with TabPane("Advanced", id="advanced-tab"):
-                        yield Label("Voice match", classes="section-title")
                         for field in ADVANCED_VOICE_FIELDS:
                             yield from self._voice_field(field)
-                        yield Button("Reset voice match to defaults", id="voice-reset")
-                        yield Label(
-                            "Noise gate: silences the mic between words", classes="section-title"
-                        )
+                        for field in SPEED_FIELDS:
+                            yield from self._voice_field(field)
                         for field_id, label, name, minimum, maximum, kind, hint in GATE_FIELDS:
                             default = _format_number(getattr(DEFAULT_GATE, name))
                             yield from labeled_field(
@@ -217,7 +239,7 @@ class MainScreen(Screen[None]):
                                 hint,
                                 "gate-field",
                             )
-                        yield Button("Reset gate to defaults", id="gate-reset")
+                        yield Button("Reset Advanced settings to defaults", id="advanced-reset")
                 with Vertical(id="controls"):
                     yield Button("Start", id="start-button", variant="primary")
                     yield LevelMeterWidget("Input", id="input-meter")
@@ -305,10 +327,15 @@ class MainScreen(Screen[None]):
         self._apply_voice_options()
         self._save_current_settings()
 
-    @on(Button.Pressed, "#voice-reset")
-    def _on_voice_reset(self) -> None:
-        for field_id, _, name, *_ in ADVANCED_VOICE_FIELDS:
+    @on(Button.Pressed, "#advanced-reset")
+    def _on_advanced_reset(self) -> None:
+        for field_id, _, name, *_ in (*ADVANCED_VOICE_FIELDS, *SPEED_FIELDS):
             self.query_one(f"#{field_id}", Input).value = str(getattr(DEFAULT_SETTINGS, name))
+        for field_id, _, name, *_ in GATE_FIELDS:
+            self.query_one(f"#{field_id}", Input).value = _format_number(
+                getattr(DEFAULT_GATE, name)
+            )
+        self._apply_gate(DEFAULT_GATE)
 
     def _apply_voice_options(
         self, engine: RvcEngine | None = None, pipeline: ConversionPipeline | None = None
@@ -323,14 +350,6 @@ class MainScreen(Screen[None]):
             engine.pitch_smoothing_ms = options["pitch_smoothing_ms"]
         if pipeline is not None:
             pipeline.set_context_ms(options["context_ms"])
-
-    @on(Button.Pressed, "#gate-reset")
-    def _on_gate_reset(self) -> None:
-        for field_id, _, name, *_ in GATE_FIELDS:
-            self.query_one(f"#{field_id}", Input).value = _format_number(
-                getattr(DEFAULT_GATE, name)
-            )
-        self._apply_gate(DEFAULT_GATE)
 
     def _apply_gate(self, settings: GateSettings) -> None:
         self._gate = settings
@@ -451,7 +470,10 @@ class MainScreen(Screen[None]):
                 output_device,
                 on_levels=self._store_levels,
                 on_error=self._store_error,
+                block_ms=self._voice_options["block_ms"],
                 context_ms=self._voice_options["context_ms"],
+                crossfade_ms=self._voice_options["crossfade_ms"],
+                hum_filter_hz=self._voice_options["hum_filter_hz"],
                 gate_settings=self._gate,
             )
             pipeline.warm_up()
@@ -581,15 +603,17 @@ class MainScreen(Screen[None]):
     def _save_current_settings(self) -> None:
         if not self._initialised:
             return
-        settings = Settings(
-            input_device=self._selected_name("#input-select"),
-            output_device=self._selected_name("#output-select"),
-            profile=self._selected_name("#voice-select"),
-            pitch=self._pitch,
-            **self._voice_options,
-            gate_hold_ms=self._gate.hold_ms,
-            gate_pre_open_ms=self._gate.pre_open_ms,
-            gate_open_above_db=self._gate.open_above_floor_db,
+        settings = load_settings().model_copy(
+            update=dict(
+                input_device=self._selected_name("#input-select"),
+                output_device=self._selected_name("#output-select"),
+                profile=self._selected_name("#voice-select"),
+                pitch=self._pitch,
+                **self._voice_options,
+                gate_hold_ms=self._gate.hold_ms,
+                gate_pre_open_ms=self._gate.pre_open_ms,
+                gate_open_above_db=self._gate.open_above_floor_db,
+            )
         )
         try:
             save_settings(settings)

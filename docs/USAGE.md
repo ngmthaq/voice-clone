@@ -25,7 +25,7 @@ Keys: `space` start or stop, `esc` back to the start screen (this stops the voic
 
 ## Make the voice match better
 
-"Index voice" is on the **Simple** tab. The other settings are on the **Advanced** tab, with the noise gate. Change one at a time: Stop, change it, Start, and listen.
+These settings are on the **Advanced** tab, with the noise gate. Change one at a time: Stop, change it, Start, and listen.
 
 | Setting | Default | What it does |
 | --- | --- | --- |
@@ -33,20 +33,30 @@ Keys: `space` start or stop, `esc` back to the start screen (this stops the voic
 | Protect consonants (%) | 67 | Keeps consonants (s, t, k, ch) from your live voice, so words stay clear when Index is high. 0 = off. |
 | Follow mic volume (%) | 50 | 0 = the model sets the volume. 100 = the output gets louder and quieter the way you speak. |
 | Pitch smoothing (ms) | 30 | Removes short pitch jumps that sound like a wobble. 0 = off. |
-| Context (ms) | 1000 | How much earlier audio the model hears. More gives clearer words and adds no delay, but needs more CPU/GPU. If the log says blocks were dropped, lower it. |
 
-The defaults are a good place to start. If the voice should sound more like the trained voice, raise Index to 75. On a fast computer, try Context 1500. On the Advanced tab, "Reset voice match to defaults" puts the four advanced settings back (Index voice keeps its value).
+The defaults are a good place to start. If the voice should sound more like the trained voice, raise Index to 75. On a fast computer, try Context 1500. At the bottom of the Advanced tab, "Reset Advanced settings to defaults" puts every Advanced setting back: voice match, speed and delay, and the noise gate.
+
+## Speed and delay
+
+These are on the **Advanced** tab, under **Speed and delay**.
+
+| Setting | Default | What it does |
+| --- | --- | --- |
+| Context (ms) | 1000 | How much earlier audio the model hears. More gives clearer words and adds no delay, but needs more CPU/GPU. If the app says it is too slow, lower it. |
+| Block size (ms) | 400 | The voice is converted in blocks this long. Smaller means less delay but more CPU/GPU work per second. If the app says it is too slow, raise it or lower Context. |
+| Crossfade (ms) | 80 | How long one block blends into the next. Raise it if you hear clicks between blocks. It can't be longer than a block. |
+| Hum filter (Hz) | 90 | Cuts mains hum and rumble below this pitch. 0 turns it off. |
 
 ## If the voice lags, drops or comes late
 
 The voice must be converted faster than you speak. On a weak graphics card (for example a laptop GeForce MX series) or on the CPU, the defaults can be too slow. The app then says "Too slow for this computer" while it runs. To fix it:
 
-1. Stop, open the **Advanced** tab and lower **Context (ms)**: try 300, then 500 if it keeps up. This is the setting that changes the speed most.
+1. Stop, open the **Advanced** tab and, under **Speed and delay**, lower **Context (ms)**: try 300, then 500 if it keeps up. This is the setting that changes the speed most.
 2. On a laptop, plug in the charger and set Windows power mode to **Best performance**.
 3. In the NVIDIA Control Panel (Manage 3D settings → Program settings), set Python to use the **High-performance NVIDIA processor**.
 4. Close other programs that use the graphics card (games, browsers with many video tabs).
 
-Some delay always remains: the voice is converted in 0.4-second blocks, so expect about 0.5 to 1 second.
+Some delay always remains: the voice is converted in blocks (0.4 seconds by default), so expect about 0.5 to 1 second. A smaller **Block size** lowers it if the computer is fast enough.
 
 ## Logs
 

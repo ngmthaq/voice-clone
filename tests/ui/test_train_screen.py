@@ -235,3 +235,31 @@ def test_parse_paths_keeps_an_existing_path_with_spaces_whole(tmp_path):
     folder.mkdir()
 
     assert _parse_paths(str(folder)) == [folder]
+
+
+def test_training_options_are_saved_and_restored(environment, monkeypatch):
+    seen = {}
+
+    def fake_train(options, applio, training_root, voices_root, report, prepare, pause_hint):
+        seen["options"] = options
+        return voices_root / options.name
+
+    monkeypatch.setattr(train_panel, "train_voice", fake_train)
+
+    async def start(app, pilot):
+        app.screen.query_one("#train-epochs", Input).value = "120"
+        app.screen.query_one("#train-batch-size", Input).value = "4"
+        app.screen.query_one("#train-save-every", Input).value = "5"
+        await _press_start(app, pilot, environment / "rec.m4a")
+        await _wait_until_finished(app, pilot)
+
+    async def reopen(app, pilot):
+        return [
+            app.screen.query_one(f"#{field_id}", Input).value
+            for field_id in ("train-name", "train-epochs", "train-batch-size", "train-save-every")
+        ]
+
+    _run(start)
+
+    assert seen["options"].save_every == 5
+    assert _run(reopen) == ["me", "120", "4", "5"]

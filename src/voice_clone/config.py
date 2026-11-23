@@ -25,6 +25,14 @@ class Settings(BaseModel):
     gate_hold_ms: int = Field(500, ge=0, le=2000)
     gate_pre_open_ms: int = Field(100, ge=0, le=400)
     gate_open_above_db: float = Field(6.0, ge=0, le=30)
+    block_ms: int = Field(400, ge=100, le=1000)
+    crossfade_ms: int = Field(80, ge=10, le=200)
+    hum_filter_hz: int = Field(90, ge=0, le=200)
+    train_name: str = "my-voice"
+    train_epochs: int = Field(200, ge=1, le=10000)
+    train_batch_size: int = Field(8, ge=1, le=50)
+    train_sample_rate: int = 40000
+    train_save_every: int = Field(10, ge=1, le=100)
 
 
 def settings_path() -> Path:
