@@ -30,7 +30,15 @@ from voice_clone.audio import (
     list_input_devices,
     list_output_devices,
 )
-from voice_clone.config import Settings, load_settings, save_settings
+from voice_clone.config import (
+    CUSTOM_PRESET,
+    PERFORMANCE_PRESETS,
+    PRESET_FIELDS,
+    Settings,
+    load_settings,
+    matching_preset,
+    save_settings,
+)
 from voice_clone.engine import RvcEngine, base_models_present, ensure_base_models
 from voice_clone.engine.download import base_model_paths
 from voice_clone.errors import VoiceCloneError
@@ -54,8 +62,8 @@ NO_VOICES_MESSAGE = (
 SLOW_LOAD = 0.9
 SLOW_MESSAGE = (
     "Too slow for this computer: converting takes {percent}% of real time{dropped}, so the "
-    "voice lags and drops. Stop, lower Context under Speed and delay on the Advanced tab "
-    "(try 300), then Start again."
+    "voice lags and drops. Stop, pick a lighter Performance preset on the Simple tab "
+    "(try Light), then Start again."
 )
 DEFAULT_GATE = GateSettings()
 DEFAULT_SETTINGS = Settings()
@@ -220,6 +228,23 @@ class MainScreen(Screen[None]):
                                 id="pitch-row",
                             ),
                         )
+                        yield from labeled_field(
+                            "Performance",
+                            Select[str](
+                                [
+                                    *(
+                                        (label, key)
+                                        for key, (label, _) in PERFORMANCE_PRESETS.items()
+                                    ),
+                                    ("Custom: set on the Advanced tab", CUSTOM_PRESET),
+                                ],
+                                value=matching_preset(self._voice_options),
+                                allow_blank=False,
+                                id="preset-select",
+                            ),
+                            "Pick what fits this computer. If the app says it is too slow, "
+                            "pick a lighter one.",
+                        )
                     with TabPane("Advanced", id="advanced-tab"):
                         for field in ADVANCED_VOICE_FIELDS:
                             yield from self._voice_field(field)
@@ -326,6 +351,25 @@ class MainScreen(Screen[None]):
         self._voice_options[name] = int(event.value)
         self._apply_voice_options()
         self._save_current_settings()
+        if name in PRESET_FIELDS:
+            self._sync_preset_select()
+
+    @on(Select.Changed, "#preset-select")
+    def _on_preset_changed(self, event: Select.Changed) -> None:
+        preset = PERFORMANCE_PRESETS.get(str(event.value))
+        if preset is None:
+            return
+        _, values = preset
+        self._voice_options.update(values)
+        for field_id, _, name, *_ in SPEED_FIELDS:
+            if name in values:
+                self.query_one(f"#{field_id}", Input).value = str(values[name])
+
+    def _sync_preset_select(self) -> None:
+        select = self.query_one("#preset-select", Select)
+        preset = matching_preset(self._voice_options)
+        if select.value != preset:
+            select.value = preset
 
     @on(Button.Pressed, "#advanced-reset")
     def _on_advanced_reset(self) -> None:

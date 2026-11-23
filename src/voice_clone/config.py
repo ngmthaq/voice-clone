@@ -57,3 +57,32 @@ def save_settings(settings: Settings, path: Path | None = None) -> None:
     data = settings.model_dump(exclude_none=True)
     with target.open("wb") as file:
         tomli_w.dump(data, file)
+
+
+CUSTOM_PRESET = "custom"
+PRESET_FIELDS = ("context_ms", "block_ms", "crossfade_ms")
+PERFORMANCE_PRESETS: dict[str, tuple[str, dict[str, int]]] = {
+    "light": (
+        "Light: laptop or older GPU, or no GPU (more delay)",
+        {"context_ms": 300, "block_ms": 600, "crossfade_ms": 60},
+    ),
+    "balanced": (
+        "Balanced: mid-range GPU or Apple M-series",
+        {"context_ms": 1000, "block_ms": 400, "crossfade_ms": 80},
+    ),
+    "high": (
+        "High: fast GPU (less delay, clearer words)",
+        {"context_ms": 1500, "block_ms": 300, "crossfade_ms": 80},
+    ),
+    "ultra": (
+        "Ultra: high-end GPU (least delay, clearest words)",
+        {"context_ms": 2000, "block_ms": 200, "crossfade_ms": 60},
+    ),
+}
+
+
+def matching_preset(values: dict[str, int]) -> str:
+    for key, (_, preset) in PERFORMANCE_PRESETS.items():
+        if all(values.get(name) == value for name, value in preset.items()):
+            return key
+    return CUSTOM_PRESET

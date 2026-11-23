@@ -316,3 +316,46 @@ def test_slow_conversion_shows_warning(empty_environment):
     assert "Too slow" in status
     assert "130%" in status
     assert "4 block(s) dropped" in status
+
+
+@pytest.mark.parametrize(
+    "saved, expected",
+    [
+        ("", "balanced"),
+        ("context_ms = 300\nblock_ms = 600\ncrossfade_ms = 60\n", "light"),
+        ("context_ms = 700\n", "custom"),
+    ],
+)
+def test_performance_preset_matches_saved_settings(empty_environment, tmp_path, saved, expected):
+    (tmp_path / "settings.toml").write_text(saved)
+
+    async def body(app, pilot):
+        return app.screen.query_one("#preset-select").value
+
+    assert _run(body) == expected
+
+
+def test_choosing_a_preset_fills_speed_fields_and_saves(empty_environment):
+    async def body(app, pilot):
+        app.screen.query_one("#preset-select").value = "ultra"
+        await pilot.pause()
+        return [
+            app.screen.query_one(f"#{field_id}").value
+            for field_id in ("context-ms", "block-ms", "crossfade-ms")
+        ], app.screen.query_one("#preset-select").value
+
+    fields, preset = _run(body)
+
+    assert fields == ["2000", "200", "60"]
+    assert preset == "ultra"
+    saved = config.load_settings()
+    assert (saved.context_ms, saved.block_ms, saved.crossfade_ms) == (2000, 200, 60)
+
+
+def test_editing_a_speed_field_switches_preset_to_custom(empty_environment):
+    async def body(app, pilot):
+        app.screen.query_one("#context-ms").value = "800"
+        await pilot.pause()
+        return app.screen.query_one("#preset-select").value
+
+    assert _run(body) == "custom"

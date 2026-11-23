@@ -36,6 +36,19 @@ These settings are on the **Advanced** tab, with the noise gate. Change one at a
 
 The defaults are a good place to start. If the voice should sound more like the trained voice, raise Index to 75. On a fast computer, try Context 1500. At the bottom of the Advanced tab, "Reset Advanced settings to defaults" puts every Advanced setting back: voice match, speed and delay, and the noise gate.
 
+## Performance presets
+
+On the **Simple** tab, **Performance** sets the speed settings to fit the computer:
+
+| Preset | For | Context | Block size | Crossfade |
+| --- | --- | --- | --- | --- |
+| Light | laptop or older GPU (e.g. GeForce MX), or no GPU | 300 | 600 | 60 |
+| Balanced (default) | mid-range GPU or Apple M-series | 1000 | 400 | 80 |
+| High | fast GPU | 1500 | 300 | 80 |
+| Ultra | high-end GPU | 2000 | 200 | 60 |
+
+A higher preset gives less delay and clearer words, but needs a faster computer. If the app says "Too slow for this computer", pick a lighter one. Changing any of these three values on the Advanced tab shows **Custom**.
+
 ## Speed and delay
 
 These are on the **Advanced** tab, under **Speed and delay**.
@@ -51,7 +64,7 @@ These are on the **Advanced** tab, under **Speed and delay**.
 
 The voice must be converted faster than you speak. On a weak graphics card (for example a laptop GeForce MX series) or on the CPU, the defaults can be too slow. The app then says "Too slow for this computer" while it runs. To fix it:
 
-1. Stop, open the **Advanced** tab and, under **Speed and delay**, lower **Context (ms)**: try 300, then 500 if it keeps up. This is the setting that changes the speed most.
+1. Stop and set **Performance** on the Simple tab to **Light**. If that keeps up, try **Balanced** later.
 2. On a laptop, plug in the charger and set Windows power mode to **Best performance**.
 3. In the NVIDIA Control Panel (Manage 3D settings → Program settings), set Python to use the **High-performance NVIDIA processor**.
 4. Close other programs that use the graphics card (games, browsers with many video tabs).
