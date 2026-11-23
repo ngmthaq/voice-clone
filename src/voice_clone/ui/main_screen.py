@@ -590,10 +590,11 @@ class MainScreen(Screen[None]):
     def _stop_pipeline(self) -> None:
         pipeline, self._pipeline = self._pipeline, None
         self._converting = False
-        self._input_level = 0.0
-        self._output_level = 0.0
         if pipeline is not None:
             pipeline.stop()
+        # Zero after stop(): the worker may still report the block it was converting.
+        self._input_level = 0.0
+        self._output_level = 0.0
 
     @work(thread=True, exclusive=True, group="stop")
     def _stop_after_error(self, message: str) -> None:
@@ -601,6 +602,8 @@ class MainScreen(Screen[None]):
         self.app.call_from_thread(self._start_failed, message)
 
     def _store_levels(self, input_rms: float, output_rms: float) -> None:
+        if not self._converting:
+            return
         self._input_level = input_rms
         self._output_level = output_rms
 

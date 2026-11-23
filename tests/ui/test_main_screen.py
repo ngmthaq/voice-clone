@@ -443,3 +443,37 @@ def test_pipeline_started_after_the_screen_closed_is_stopped(empty_environment, 
     main_screen.MainScreen._start_pipeline.__wrapped__(screen, MIC, BLACKHOLE, profile, 0)
 
     assert stopped == [True]
+
+
+def test_stop_resets_the_level_meters(empty_environment):
+    class FinishingPipeline:
+        """Reports its last block while stopping, as the worker thread can."""
+
+        load = 0.0
+        dropped_blocks = 0
+
+        def __init__(self, screen) -> None:
+            self._screen = screen
+
+        def stop(self) -> None:
+            self._screen._store_levels(0.2, 0.2)
+
+    async def body(app, pilot):
+        screen = app.screen
+        screen._pipeline = FinishingPipeline(screen)
+        screen._converting = True
+        screen._store_levels(0.2, 0.2)
+        await pilot.pause(0.3)
+        while_running = (
+            screen.query_one("#input-meter").level,
+            screen.query_one("#output-meter").level,
+        )
+        screen.toggle()
+        await pilot.pause(0.3)
+        after_stop = (
+            screen.query_one("#input-meter").level,
+            screen.query_one("#output-meter").level,
+        )
+        return while_running, after_stop
+
+    assert _run(body) == ((0.2, 0.2), (0.0, 0.0))
