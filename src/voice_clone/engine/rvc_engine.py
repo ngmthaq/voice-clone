@@ -40,6 +40,8 @@ LOUDNESS_FRAME = 640
 LOUDNESS_HOP = 160
 LOUDNESS_FLOOR = 1e-3
 DECODE_MARGIN_FRAMES = 10
+RMVPE_THRESHOLD = 0.03
+RMVPE_FRAME_MULTIPLE = 32
 
 
 class ContentEncoder(Protocol):
@@ -304,7 +306,9 @@ class _HubertContentEncoder:
 
 
 class _RmvpePitchExtractor:
-    def __init__(self, model_path: Path, device: torch.device) -> None:
+    def __init__(
+        self, model_path: Path, device: torch.device, recurrent_on_cpu: bool | None = None
+    ) -> None:
         from voice_clone.engine.vendor.rmvpe import RMVPE
 
         try:
@@ -315,9 +319,35 @@ class _RmvpePitchExtractor:
                 "Could not load the RMVPE pitch model. Delete the models folder and "
                 "download it again."
             ) from error
+        # The BiGRU steps through the frames one by one, which is about 20x slower on Apple
+        # GPUs than on the CPU. So on MPS only the convolutional part stays on the GPU.
+        if recurrent_on_cpu is None:
+            recurrent_on_cpu = device.type == "mps"
+        self._recurrent_device = torch.device("cpu") if recurrent_on_cpu else None
+        if self._recurrent_device is not None:
+            self._rmvpe.model.fc.to(self._recurrent_device)
 
     def extract(self, audio: np.ndarray) -> np.ndarray:
-        return np.asarray(self._rmvpe.infer_from_audio(audio, thred=0.03), dtype=np.float32)
+        if self._recurrent_device is None:
+            f0 = self._rmvpe.infer_from_audio(audio, thred=RMVPE_THRESHOLD)
+            return np.asarray(f0, dtype=np.float32)
+        with torch.no_grad():
+            mel = self._rmvpe.extract_mel(audio, center=True)
+            hidden = _rmvpe_hidden(self._rmvpe.model, mel, self._recurrent_device)
+        f0 = self._rmvpe.decode(hidden.squeeze(0).numpy(), thred=RMVPE_THRESHOLD)
+        return np.asarray(f0, dtype=np.float32)
+
+
+def _rmvpe_hidden(
+    model: nn.Module, mel: torch.Tensor, recurrent_device: torch.device
+) -> torch.Tensor:
+    """RMVPE's network, with the recurrent part (`fc`) run on `recurrent_device`."""
+    frames = mel.shape[-1]
+    pad = RMVPE_FRAME_MULTIPLE * math.ceil(frames / RMVPE_FRAME_MULTIPLE) - frames
+    padded = F.pad(mel, (0, pad))
+    x = model.cnn(model.unet(padded.float().transpose(-1, -2).unsqueeze(1)))
+    x = x.transpose(1, 2).flatten(-2)
+    return model.fc(x.to(recurrent_device))[:, :frames]
 
 
 def _default_device() -> torch.device:

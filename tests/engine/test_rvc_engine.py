@@ -341,3 +341,50 @@ def test_half_content_encoder_returns_half(tiny_contentvec):
         out = encoder.encode(torch.randn(1, 8000), "v2")
 
     assert out.dtype == torch.float16
+
+
+@pytest.fixture(scope="module")
+def tiny_rmvpe(tmp_path_factory):
+    from voice_clone.engine.vendor.rmvpe import E2E
+
+    torch.manual_seed(0)
+    path = tmp_path_factory.mktemp("rmvpe") / "rmvpe.pt"
+    torch.save(E2E(4, 1, (2, 2)).state_dict(), path)
+    return path
+
+
+def test_rmvpe_split_matches_the_original_network(tiny_rmvpe):
+    extractor = rvc_engine._RmvpePitchExtractor(tiny_rmvpe, torch.device("cpu"))
+    mel = torch.randn(1, 128, 75)
+
+    with torch.no_grad():
+        expected = extractor._rmvpe.mel2hidden(mel)
+        got = rvc_engine._rmvpe_hidden(extractor._rmvpe.model, mel, torch.device("cpu"))
+
+    assert got.shape == expected.shape
+    assert torch.allclose(got, expected, atol=1e-6)
+
+
+def test_rmvpe_with_recurrent_on_cpu_gives_same_pitch(tiny_rmvpe):
+    audio = (np.random.default_rng(3).standard_normal(14000) * 0.1).astype(np.float32)
+    whole = rvc_engine._RmvpePitchExtractor(tiny_rmvpe, torch.device("cpu"), False)
+    split = rvc_engine._RmvpePitchExtractor(tiny_rmvpe, torch.device("cpu"), True)
+
+    np.testing.assert_allclose(split.extract(audio), whole.extract(audio), rtol=1e-5)
+
+
+@pytest.mark.parametrize(("device", "on_cpu"), [("cpu", False), ("cuda", False), ("mps", True)])
+def test_rmvpe_moves_recurrent_part_to_cpu_only_on_apple_gpus(
+    tiny_rmvpe, monkeypatch, device, on_cpu
+):
+    monkeypatch.setattr("voice_clone.engine.vendor.rmvpe.RMVPE.__init__", _cpu_rmvpe_init)
+
+    extractor = rvc_engine._RmvpePitchExtractor(tiny_rmvpe, torch.device(device))
+
+    assert (extractor._recurrent_device is not None) is on_cpu
+
+
+def _cpu_rmvpe_init(self, model_path, is_half=False, device=None):
+    from voice_clone.engine.vendor.rmvpe import E2E
+
+    self.model = E2E(4, 1, (2, 2))
