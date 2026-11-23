@@ -38,11 +38,14 @@ The defaults are a good place to start. If the voice should sound more like the 
 
 ## Performance presets
 
-On the **Simple** tab, **Performance** sets every setting on the Advanced tab to fit the computer:
+On the **Simple** tab, **Performance** sets every setting on the Advanced tab to fit the computer.
+
+The easiest way to pick one: on the start screen choose **Check setup**, then **Measure speed**. It converts made-up speech with each preset (up to a minute) and saves the heaviest one your computer keeps up with. On a computer without a usable GPU, the voice changer starts on **Minimal** until you choose something else.
+
 
 | Setting | Minimal | Light | Balanced (default) | High | Ultra |
 | --- | --- | --- | --- | --- | --- |
-| For | no GPU, or Light is still too slow | laptop or older GPU (e.g. GeForce MX) | mid-range GPU or Apple M-series | fast GPU | high-end GPU |
+| For | no GPU, or Light is still too slow | laptop or older GPU (e.g. GeForce MX) | mid-range GPU | fast GPU or Apple M-series | high-end GPU |
 | Index voice (%) | 0 | 40 | 50 | 55 | 60 |
 | Protect consonants (%) | 80 | 75 | 67 | 60 | 50 |
 | Follow mic volume (%) | 60 | 60 | 50 | 45 | 40 |
@@ -74,7 +77,7 @@ These are on the **Advanced** tab, under **Speed and delay**.
 
 The voice must be converted faster than you speak. On a weak graphics card (for example a laptop GeForce MX series) or on the CPU, the defaults can be too slow. The app then says "Too slow for this computer" while it runs. To fix it:
 
-1. Stop and set **Performance** on the Simple tab to **Light**. If it still says too slow, pick **Minimal** (more delay, and the `.index` file is not used). If Light keeps up, try **Balanced** later.
+1. Stop and run **Check setup → Measure speed** to pick the preset this computer keeps up with. Or set **Performance** on the Simple tab to **Light** yourself; if it still says too slow, pick **Minimal** (more delay, and the `.index` file is not used).
 2. On a laptop, plug in the charger and set Windows power mode to **Best performance**.
 3. In the NVIDIA Control Panel (Manage 3D settings → Program settings), set Python to use the **High-performance NVIDIA processor**.
 4. Close other programs that use the graphics card (games, browsers with many video tabs).

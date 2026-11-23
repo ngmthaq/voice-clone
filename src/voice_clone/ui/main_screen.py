@@ -35,11 +35,18 @@ from voice_clone.config import (
     CUSTOM_PRESET,
     PERFORMANCE_PRESETS,
     Settings,
+    apply_preset,
     load_settings,
     matching_preset,
     save_settings,
+    settings_saved,
 )
-from voice_clone.engine import RvcEngine, base_models_present, ensure_base_models
+from voice_clone.engine import (
+    RvcEngine,
+    base_models_present,
+    ensure_base_models,
+    select_torch_device,
+)
 from voice_clone.engine.download import base_model_paths
 from voice_clone.errors import VoiceCloneError
 from voice_clone.paths import models_dir, voices_dir
@@ -182,7 +189,7 @@ class MainScreen(Screen[None]):
 
     def __init__(self) -> None:
         super().__init__()
-        self._settings = load_settings()
+        self._settings = _first_start_settings() or load_settings()
         self._inputs: list[AudioDevice] = []
         self._outputs: list[AudioDevice] = []
         self._profiles: list[VoiceProfile] = []
@@ -726,3 +733,14 @@ class MainScreen(Screen[None]):
 
 def _format_number(value: float) -> str:
     return f"{value:g}"
+
+
+FIRST_START_CPU_PRESET = "minimal"
+
+
+def _first_start_settings() -> Settings | None:
+    """On a fresh install without a usable GPU, start with the lightest preset."""
+    if settings_saved() or select_torch_device().type != "cpu":
+        return None
+    logger.info("No GPU found: starting with the %s preset", FIRST_START_CPU_PRESET)
+    return apply_preset(Settings(), FIRST_START_CPU_PRESET)

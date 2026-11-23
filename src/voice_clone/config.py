@@ -43,6 +43,10 @@ def settings_path() -> Path:
     return config_dir() / SETTINGS_FILE_NAME
 
 
+def settings_saved() -> bool:
+    return settings_path().is_file()
+
+
 def load_settings(path: Path | None = None) -> Settings:
     target = path or settings_path()
     if not target.is_file():
@@ -160,3 +164,8 @@ def matching_preset(values: dict[str, float]) -> str:
         if all(values.get(name) == value for name, value in preset.items()):
             return key
     return CUSTOM_PRESET
+
+
+def apply_preset(settings: Settings, key: str) -> Settings:
+    _, values = PERFORMANCE_PRESETS[key]
+    return Settings.model_validate({**settings.model_dump(), **values})

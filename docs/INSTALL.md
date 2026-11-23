@@ -105,6 +105,8 @@ Each line shows ✓ (ready), ✗ (missing, with how to fix it), ! (works, but co
 
 To get training ready ahead of time, press **Install Applio**. It downloads Applio, creates its Python 3.12 environment, installs its packages and downloads its pretrained models (several GB in all). The page shows each step and Applio's output; **Stop install** stops it, and pressing **Install Applio** again starts over. The button appears only when `git` and Python 3.12 are installed. If you skip this, the first training run installs Applio by itself.
 
+Once the base models and at least one voice are there, press **Measure speed**. It tests each Performance preset on this computer (up to a minute) and saves the best one the computer keeps up with, so the voice changer is ready to use.
+
 The voice changer also downloads the base models by itself the first time you open it, if they are missing. If a download fails, check your connection and press "Retry download".
 
 If the GPU line says an NVIDIA card is installed but PyTorch cannot use it, install the CUDA build as shown in [Windows with an NVIDIA card](#windows-with-an-nvidia-card-powershell).

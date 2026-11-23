@@ -251,3 +251,52 @@ def test_install_applio_is_hidden_without_git(fake_applio, monkeypatch):
         return app.screen.query_one("#install-applio").display
 
     assert _run(body) is False
+
+
+def test_measure_speed_hidden_until_models_are_there(environment):
+    async def body(app, pilot):
+        return app.screen.query_one("#measure-speed").display
+
+    assert _run(body) is False
+
+
+def test_measure_speed_saves_the_best_preset_and_says_so(environment, monkeypatch):
+    _fill_models(environment)
+    calls = []
+
+    def fake_measure(on_result=None):
+        calls.append(True)
+        result = setup_screen.bench.BenchResult(300, [0.5, 0.5])
+        on_result("high", result)
+        return "high", {"high": result}
+
+    monkeypatch.setattr(setup_screen.bench, "measure_and_save", fake_measure)
+
+    async def body(app, pilot):
+        button = app.screen.query_one("#measure-speed", Button)
+        shown = button.display
+        button.press()
+        await _settle(app, pilot)
+        return shown, _status(app), button.disabled
+
+    shown, status, disabled = _run(body)
+
+    assert shown and calls and not disabled
+    assert status == (
+        "This computer keeps up with High (load 0.50). Saved: the Voice changer now uses it."
+    )
+
+
+def test_measure_speed_reports_when_even_minimal_is_too_slow(environment, monkeypatch):
+    _fill_models(environment)
+    slow = setup_screen.bench.BenchResult(1000, [1.3])
+    monkeypatch.setattr(
+        setup_screen.bench, "measure_and_save", lambda on_result=None: (None, {"minimal": slow})
+    )
+
+    async def body(app, pilot):
+        app.screen.query_one("#measure-speed", Button).press()
+        await _settle(app, pilot)
+        return _status(app)
+
+    assert _run(body).startswith("Even Minimal is too slow on this computer (load 1.30).")

@@ -1,5 +1,5 @@
 import time
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -13,6 +13,8 @@ SYLLABLES_PER_SECOND = 4
 QUIET_LEVEL = 0.003
 LOUD_LEVEL = 0.2
 WARM_UP_BLOCKS = 1
+TARGET_LOAD = 0.7
+MEASURE_SECONDS = 4.0
 
 
 @dataclass
@@ -105,3 +107,65 @@ def run_bench(engine: object, values: Mapping[str, float], seconds: float) -> Be
             engine.time_stages = False  # type: ignore[attr-defined]
     stage_ms = {name: total * 1000 / counted for name, total in stage_totals.items()}
     return BenchResult(block_ms, loads, stage_ms)
+
+
+def fits(result: BenchResult) -> bool:
+    """Even the slow blocks leave room for the rest of the computer's work."""
+    return result.p95_load < TARGET_LOAD
+
+
+def pick_preset(
+    engine: object,
+    presets: Mapping[str, Mapping[str, float]],
+    seconds: float = MEASURE_SECONDS,
+    on_result: Callable[[str, BenchResult], None] | None = None,
+) -> tuple[str | None, dict[str, BenchResult]]:
+    """Measure presets from lightest to heaviest and return the heaviest that fits.
+
+    Stops at the first preset that does not fit, since heavier ones will not fit either.
+    Returns None when even the lightest is too slow.
+    """
+    best: str | None = None
+    results: dict[str, BenchResult] = {}
+    for name, values in presets.items():
+        apply_engine_options(engine, values)
+        result = run_bench(engine, values, seconds)
+        results[name] = result
+        if on_result is not None:
+            on_result(name, result)
+        if not fits(result):
+            break
+        best = name
+    return best, results
+
+
+def measure_and_save(
+    on_result: Callable[[str, BenchResult], None] | None = None,
+) -> tuple[str | None, dict[str, BenchResult]]:
+    """Find the heaviest preset this computer keeps up with, and save it as the settings."""
+    from voice_clone.config import PERFORMANCE_PRESETS, apply_preset, load_settings, save_settings
+    from voice_clone.engine import RvcEngine
+    from voice_clone.engine.download import base_model_paths
+    from voice_clone.errors import ProfileError
+    from voice_clone.paths import models_dir, voices_dir
+    from voice_clone.profiles import discover_profiles
+
+    settings = load_settings()
+    profiles = discover_profiles(voices_dir())
+    profile = next((p for p in profiles if p.name == settings.profile), None)
+    if profile is None and profiles:
+        profile = profiles[0]
+    if profile is None:
+        raise ProfileError("Add or train a voice first: the speed test needs one.")
+    presets = {name: values for name, (_, values) in PERFORMANCE_PRESETS.items()}
+    engine = RvcEngine(
+        base_model_paths(models_dir()),
+        cpu_threads=settings.cpu_threads,
+        precision=settings.precision,
+    )
+    apply_engine_options(engine, next(iter(presets.values())))
+    engine.load(profile)
+    best, results = pick_preset(engine, presets, on_result=on_result)
+    if best is not None:
+        save_settings(apply_preset(load_settings(), best))
+    return best, results

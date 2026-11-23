@@ -1,6 +1,7 @@
 import asyncio
 
 import pytest
+import torch
 
 import voice_clone.config as config
 import voice_clone.ui.main_screen as main_screen
@@ -24,6 +25,7 @@ def empty_environment(tmp_path, monkeypatch):
     monkeypatch.setattr(main_screen, "voices_dir", lambda: tmp_path / "voices")
     monkeypatch.setattr(main_screen, "list_input_devices", lambda: [MIC])
     monkeypatch.setattr(main_screen, "list_output_devices", lambda: [BLACKHOLE])
+    monkeypatch.setattr(main_screen, "select_torch_device", lambda: torch.device("mps"))
 
 
 def test_no_voices_shows_status_message(empty_environment):
@@ -477,3 +479,22 @@ def test_stop_resets_the_level_meters(empty_environment):
         return while_running, after_stop
 
     assert _run(body) == ((0.2, 0.2), (0.0, 0.0))
+
+
+def test_fresh_cpu_only_install_starts_on_minimal(empty_environment, monkeypatch):
+    monkeypatch.setattr(main_screen, "select_torch_device", lambda: torch.device("cpu"))
+
+    async def body(app, pilot):
+        return app.screen.query_one("#preset-select").value
+
+    assert _run(body) == "minimal"
+
+
+def test_saved_settings_win_over_the_cpu_default(empty_environment, monkeypatch, tmp_path):
+    (tmp_path / "settings.toml").write_text("block_ms = 400\n")
+    monkeypatch.setattr(main_screen, "select_torch_device", lambda: torch.device("cpu"))
+
+    async def body(app, pilot):
+        return app.screen.query_one("#preset-select").value
+
+    assert _run(body) == "balanced"

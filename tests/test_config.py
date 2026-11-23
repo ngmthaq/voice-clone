@@ -1,7 +1,7 @@
 import pytest
 
 import voice_clone.config as config
-from voice_clone.config import Settings, load_settings, save_settings
+from voice_clone.config import Settings, apply_preset, load_settings, save_settings
 
 
 def test_save_then_load_returns_same_settings(tmp_path):
@@ -79,3 +79,11 @@ def test_precision_round_trips(tmp_path):
     save_settings(Settings(precision="fp16"), path)
 
     assert load_settings(path).precision == "fp16"
+
+
+def test_apply_preset_sets_preset_values_and_keeps_the_rest():
+    settings = apply_preset(Settings(profile="me", pitch=3), "light")
+
+    assert (settings.block_ms, settings.context_ms, settings.gate_open_above_db) == (600, 300, 8.0)
+    assert (settings.profile, settings.pitch) == ("me", 3)
+    assert isinstance(settings.block_ms, int)

@@ -115,7 +115,7 @@ def _build_parser() -> argparse.ArgumentParser:
 def _run_bench_command(args: argparse.Namespace) -> int:
     import torch
 
-    from voice_clone.bench import apply_engine_options, run_bench
+    from voice_clone.bench import apply_engine_options, fits, run_bench
     from voice_clone.config import PERFORMANCE_PRESETS, load_settings
     from voice_clone.engine import RvcEngine, base_models_present, select_torch_device
     from voice_clone.engine.download import base_model_paths
@@ -145,6 +145,7 @@ def _run_bench_command(args: argparse.Namespace) -> int:
     print(f"Voice: {profile.name}   Device: {device} ({engine.precision})", end="")
     print(f"   CPU threads: {torch.get_num_threads()}" if device.type == "cpu" else "")
     print(f"{'Preset':<10}{'Block':>7}{'Load':>7}{'p95':>7}{'Slow':>6}   Stage ms per hop")
+    fitting: list[str] = []
     try:
         for name in presets:
             values = PERFORMANCE_PRESETS[name][1]
@@ -152,6 +153,8 @@ def _run_bench_command(args: argparse.Namespace) -> int:
             if engine.output_sample_rate == 0:
                 engine.load(profile)
             result = run_bench(engine, values, args.seconds)
+            if fits(result) and len(fitting) == presets.index(name):
+                fitting.append(name)
             stages = "  ".join(f"{k} {v:.0f}" for k, v in result.stage_ms.items())
             print(
                 f"{name:<10}{result.block_ms:>5}ms{result.mean_load:>7.2f}{result.p95_load:>7.2f}"
@@ -162,6 +165,10 @@ def _run_bench_command(args: argparse.Namespace) -> int:
         return EXIT_ERROR
     except KeyboardInterrupt:
         return EXIT_INTERRUPTED
+    if fitting:
+        print(f"Recommended: {fitting[-1]} (heaviest preset with p95 under 0.7)")
+    else:
+        print("None of these presets keeps up comfortably (p95 under 0.7).")
     return 0
 
 
