@@ -32,9 +32,9 @@ As a `developer`, I want to `have the app's quit/restart check ask controllers i
 
 ## Acceptance Criteria
 
-- [ ] Given work is running in any controller, when the user quits or restarts, then the app asks for confirmation with the same message as today.
-- [ ] Given no work is running, when the user quits, then the app quits with no question.
-- [ ] Given `views/app.py`, when I read it, then `_busy_message` asks controllers, not screens.
+- [x] Given work is running in any controller, when the user quits or restarts, then the app asks for confirmation with the same message as today.
+- [x] Given no work is running, when the user quits, then the app quits with no question.
+- [x] Given `views/app.py`, when I read it, then `_busy_message` asks controllers, not screens.
 
 ## Tasks
 

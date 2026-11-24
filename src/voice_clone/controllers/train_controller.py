@@ -43,6 +43,10 @@ class TrainController:
         return self._running
 
     @property
+    def busy_message(self) -> str | None:
+        return "Training is running." if self._running else None
+
+    @property
     def stopping(self) -> bool:
         return self._stopping
 

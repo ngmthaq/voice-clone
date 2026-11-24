@@ -340,3 +340,38 @@ def test_stop_on_unmount_stops_an_existing_runner(env):
 
 def test_stop_on_unmount_without_runner_does_nothing(env):
     TrainController().stop_on_unmount()
+
+
+def test_busy_message_is_none_when_idle(env):
+    controller = TrainController()
+
+    assert controller.busy_message is None
+
+
+def test_busy_message_reports_training_while_running(env):
+    controller = TrainController()
+
+    controller.start(options())
+
+    assert controller.busy_message == "Training is running."
+
+
+def test_busy_message_is_none_after_finish(env):
+    controller = TrainController()
+    controller.start(options())
+
+    controller.finish()
+
+    assert controller.busy_message is None
+
+
+def test_controllers_are_busy_reporters():
+    from voice_clone.controllers import (
+        BusyReporter,
+        ChangerController,
+        SetupController,
+    )
+
+    assert isinstance(TrainController(), BusyReporter)
+    assert isinstance(SetupController(), BusyReporter)
+    assert isinstance(ChangerController.__dict__["busy_message"], property)

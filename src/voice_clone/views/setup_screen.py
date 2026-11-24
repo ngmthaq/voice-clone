@@ -62,8 +62,8 @@ class SetupScreen(Screen[None]):
         self._controller.stop_install()
 
     @property
-    def busy_message(self) -> str | None:
-        return self._controller.busy_message
+    def controller(self) -> SetupController:
+        return self._controller
 
     def action_back(self) -> None:
         if self._controller.busy:

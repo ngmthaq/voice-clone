@@ -60,9 +60,9 @@
     "semantic_hash": ""
   },
   "src/voice_clone/controllers/__init__.py": {
-    "mtime": 1795501792.6124237,
-    "seen": 1795501828.148181,
-    "ast_hash": "c23d440742bb6d1ba39bf7c2a0b411bb",
+    "mtime": 1795506495.1422663,
+    "seen": 1795506532.945339,
+    "ast_hash": "75a1f10b156bd5ca022f88c1b66c0511",
     "semantic_hash": ""
   },
   "src/voice_clone/domain/__init__.py": {
@@ -252,9 +252,9 @@
     "semantic_hash": ""
   },
   "src/voice_clone/views/app.py": {
-    "mtime": 1795485852.9744492,
-    "seen": 1795487002.348781,
-    "ast_hash": "719096e6d0826ca0009e9a47633f9a88",
+    "mtime": 1795506495.1427257,
+    "seen": 1795506532.945364,
+    "ast_hash": "681f3346b0b592eacf8de98705230f11",
     "semantic_hash": ""
   },
   "src/voice_clone/views/fields.py": {
@@ -276,27 +276,27 @@
     "semantic_hash": ""
   },
   "src/voice_clone/views/main_screen.py": {
-    "mtime": 1795486311.6313467,
-    "seen": 1795487002.348783,
-    "ast_hash": "7e2e1867a07c1fb128e9e40f7056458a",
+    "mtime": 1795506495.1429427,
+    "seen": 1795506532.945366,
+    "ast_hash": "cc5f7ca06a0b18dbec6f88a0fc6d84a1",
     "semantic_hash": ""
   },
   "src/voice_clone/views/setup_screen.py": {
-    "mtime": 1795487915.255515,
-    "seen": 1795488780.548612,
-    "ast_hash": "ce31f6a2f80cb80da3a1e4e6b50419ad",
+    "mtime": 1795506495.143156,
+    "seen": 1795506532.945367,
+    "ast_hash": "a39b54128d9d75952d1473156a58123c",
     "semantic_hash": ""
   },
   "src/voice_clone/views/train_panel_widget.py": {
-    "mtime": 1795501792.61294,
-    "seen": 1795501828.1482089,
-    "ast_hash": "6f77bc82d0f041261b3c8e285cf90e59",
+    "mtime": 1795506495.1433437,
+    "seen": 1795506532.945367,
+    "ast_hash": "fbadf00281c50ef447ee0439f5bdb855",
     "semantic_hash": ""
   },
   "src/voice_clone/views/train_screen.py": {
-    "mtime": 1795485852.9756765,
-    "seen": 1795487002.3487842,
-    "ast_hash": "df31a16049c92369dce3923a57307f52",
+    "mtime": 1795506495.1435196,
+    "seen": 1795506532.945368,
+    "ast_hash": "816772471ea206acd208b79bfafe59fc",
     "semantic_hash": ""
   },
   "tests/domain/__init__.py": {
@@ -570,9 +570,9 @@
     "semantic_hash": ""
   },
   ".claude/references/PROJECT_OVERVIEW.md": {
-    "mtime": 1795501814.112708,
-    "seen": 1795501828.148243,
-    "ast_hash": "b18592ab05ed44492507982209465e14",
+    "mtime": 1795506521.5302951,
+    "seen": 1795506532.9454021,
+    "ast_hash": "1ff1f311b53c00f8819e33d030cf0d92",
     "semantic_hash": ""
   },
   ".claude/skills/agile-planning/SKILL.md": {
@@ -936,9 +936,9 @@
     "semantic_hash": ""
   },
   "plans/2026-11-24-app-shell-busy-check-story.md": {
-    "mtime": 1795485852.9621859,
-    "seen": 1795487002.348856,
-    "ast_hash": "62b5038bd5a1624ab1711a0009f4cb8d",
+    "mtime": 1795506521.525353,
+    "seen": 1795506532.945441,
+    "ast_hash": "40be3bb21af2a809470b9821dfcfdd3c",
     "semantic_hash": ""
   },
   "plans/2026-11-24-move-code-into-domain-views-story.md": {
@@ -948,9 +948,9 @@
     "semantic_hash": ""
   },
   "plans/2026-11-24-refactor-codebase-to-mvc-overview.md": {
-    "mtime": 1795501814.1131015,
-    "seen": 1795501828.148284,
-    "ast_hash": "8e273eb0452d1ca1014a56d5d6ae6618",
+    "mtime": 1795506521.5230246,
+    "seen": 1795506532.9454432,
+    "ast_hash": "cf0bb0fe9b36924bf1845cb79f19c646",
     "semantic_hash": ""
   },
   "plans/2026-11-24-setup-controller-story.md": {
@@ -1014,21 +1014,39 @@
     "semantic_hash": ""
   },
   "src/voice_clone/controllers/train_controller.py": {
-    "mtime": 1795501207.641898,
-    "seen": 1795501828.148184,
-    "ast_hash": "c2e5d92a5440bd6c957feb157404e2e7",
+    "mtime": 1795506495.1425188,
+    "seen": 1795506532.945343,
+    "ast_hash": "3eebe2cbf9ba5dba6473bd88e7a894e1",
     "semantic_hash": ""
   },
   "tests/controllers/test_train_controller.py": {
-    "mtime": 1795501648.555343,
-    "seen": 1795501828.148213,
-    "ast_hash": "df56fdf4526294e69a4173234d375598",
+    "mtime": 1795506495.1437242,
+    "seen": 1795506532.9453719,
+    "ast_hash": "df8688d439fc15f4c4e4a76213d482bc",
     "semantic_hash": ""
   },
   "plans/2026-11-24-13-18-55-s4-train-controller.md": {
     "mtime": 1795501814.1174626,
     "seen": 1795501828.148282,
     "ast_hash": "ef036c45c2263d3da895b4459f0a433e",
+    "semantic_hash": ""
+  },
+  "src/voice_clone/controllers/busy_reporter.py": {
+    "mtime": 1795506214.3981433,
+    "seen": 1795506532.94534,
+    "ast_hash": "84a9b650db58e112b42fe099544c7321",
+    "semantic_hash": ""
+  },
+  "tests/views/test_app.py": {
+    "mtime": 1795506342.433748,
+    "seen": 1795506532.945386,
+    "ast_hash": "cc07a8d6e68c288a5938f2a575a5f19d",
+    "semantic_hash": ""
+  },
+  "plans/2026-11-24-14-42-44-s5-app-shell-busy-check.md": {
+    "mtime": 1795506521.528139,
+    "seen": 1795506532.945441,
+    "ast_hash": "4c408b0d3a2960091b82e80516a8459d",
     "semantic_hash": ""
   }
 }

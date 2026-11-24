@@ -4,6 +4,7 @@ from textual.containers import Vertical, VerticalScroll
 from textual.screen import Screen
 from textual.widgets import Footer, Header, Static
 
+from voice_clone.controllers import TrainController
 from voice_clone.views.train_panel_widget import TrainPanelWidget
 
 BACK_WHILE_TRAINING_MESSAGE = "Stop training first, then go back."
@@ -24,9 +25,8 @@ class TrainScreen(Screen[None]):
         yield Footer()
 
     @property
-    def busy_message(self) -> str | None:
-        panel = self.query_one("#train-panel", TrainPanelWidget)
-        return "Training is running." if panel.running else None
+    def controller(self) -> TrainController:
+        return self.query_one("#train-panel", TrainPanelWidget).controller
 
     def action_back(self) -> None:
         panel = self.query_one("#train-panel", TrainPanelWidget)

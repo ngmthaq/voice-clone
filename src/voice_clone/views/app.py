@@ -4,6 +4,7 @@ from pathlib import Path
 from textual.app import App
 from textual.binding import Binding
 
+from voice_clone.controllers import BusyReporter
 from voice_clone.views import HomeScreen
 
 RESTART = "restart"
@@ -36,7 +37,7 @@ class VoiceCloneApp(App[str]):
     def _confirmed(self, action: str) -> bool:
         """True when nothing is busy, or the same key was pressed again within a few seconds.
 
-        Quitting while a screen is busy (training, installing, downloading, loading a voice)
+        Quitting while work is running (training, installing, downloading, loading a voice)
         stops that work, so the first press only warns.
         """
         busy = self._busy_message()
@@ -58,7 +59,9 @@ class VoiceCloneApp(App[str]):
 
     def _busy_message(self) -> str | None:
         for screen in reversed(self.screen_stack):
-            message = getattr(screen, "busy_message", None)
-            if message:
-                return str(message)
+            controller = getattr(screen, "controller", None)
+            if isinstance(controller, BusyReporter):
+                message = controller.busy_message
+                if message:
+                    return message
         return None

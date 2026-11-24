@@ -256,8 +256,8 @@ class MainScreen(Screen[None]):
         self._controller.flush_save()
 
     @property
-    def busy_message(self) -> str | None:
-        return self._controller.busy_message
+    def controller(self) -> ChangerController:
+        return self._controller
 
     def toggle(self) -> None:
         controller = self._controller

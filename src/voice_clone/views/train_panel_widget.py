@@ -31,6 +31,10 @@ class TrainPanelWidget(Vertical):
         self._controller = TrainController()
 
     @property
+    def controller(self) -> TrainController:
+        return self._controller
+
+    @property
     def running(self) -> bool:
         return self._controller.running
 
