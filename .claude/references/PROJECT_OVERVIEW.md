@@ -36,7 +36,7 @@
 | --- | --- |
 | `cli.py`, `__main__.py` | Commands: `run`, `train`, `bench` |
 | `views/` | Textual `app.py`, screens (`HomeScreen`, `MainScreen`, `SetupScreen`, `TrainScreen`), widgets, `app.tcss` |
-| `controllers/` | Screen logic with no Textual code. `ChangerController` runs the voice changer. Views only show its state |
+| `controllers/` | Screen logic with no Textual code. `ChangerController` runs the voice changer. `SetupController` runs the setup checks, downloads, Applio install, speed test, and the `bench` command logic. Views only show their state |
 | `domain/audio/` | Device list, `ConversionPipeline`, `NoiseGate`, `RingBuffer` |
 | `domain/engine/` | `RvcEngine`, torch device choice, base model download. `domain/engine/vendor/` is copied RVC code (not linted) |
 | `domain/profiles/` | Find voices in `voices/` |

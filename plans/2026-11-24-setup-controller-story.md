@@ -33,11 +33,11 @@ As a `developer`, I want to `have the setup check and speed test logic in a cont
 
 ## Acceptance Criteria
 
-- [ ] Given `controllers/setup_controller.py`, when a test runs checks with fake facts, then it returns the same check list as today.
-- [ ] Given the controller, when it downloads base models, installs Applio, or measures speed, then it reports progress through a callback, not widgets.
-- [ ] Given `python -m voice_clone bench`, when it runs, then it uses the setup controller and prints the same output as before.
-- [ ] Given `SetupScreen`, when I read it, then it has no direct calls to `domain/`.
-- [ ] Given the app, when I use the Setup screen, then it works exactly as before.
+- [x] Given `controllers/setup_controller.py`, when a test runs checks with fake facts, then it returns the same check list as today.
+- [x] Given the controller, when it downloads base models, installs Applio, or measures speed, then it reports progress through a callback, not widgets.
+- [x] Given `python -m voice_clone bench`, when it runs, then it uses the setup controller and prints the same output as before.
+- [x] Given `SetupScreen`, when I read it, then it has no direct calls to `domain/`.
+- [x] Given the app, when I use the Setup screen, then it works exactly as before.
 
 ## Tasks
 

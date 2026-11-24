@@ -3,7 +3,7 @@
 - **Source:** Pasted text
 - **Type:** epic
 - **Created:** 2026-11-24
-- **Stories:** 5 · **Total Points:** 25 · **Done:** 2 · **In progress:** 0 · **Not started:** 3
+- **Stories:** 5 · **Total Points:** 25 · **Done:** 3 · **In progress:** 0 · **Not started:** 2
 
 ## Summary
 
@@ -15,7 +15,7 @@ This epic moves `src/voice_clone/` into three layers: `domain/` (model: settings
 | --- | --- | --- | --- | --- | --- | --- |
 | S1 | Move code into `domain/` and `views/` | [Doc](./2026-11-24-move-code-into-domain-views-story.md) | 5 | — | — | ✅ Done |
 | S2 | Voice changer controller | [Doc](./2026-11-24-voice-changer-controller-story.md) | 8 | S1 | — | ✅ Done |
-| S3 | Setup controller (Setup screen + `bench`) | [Doc](./2026-11-24-setup-controller-story.md) | 5 | S1 | — | ⬜ Not started |
+| S3 | Setup controller (Setup screen + `bench`) | [Doc](./2026-11-24-setup-controller-story.md) | 5 | S1 | — | ✅ Done |
 | S4 | Train controller (Train screen + `train`) | [Doc](./2026-11-24-train-controller-story.md) | 5 | S1 | — | ⬜ Not started |
 | S5 | App shell asks controllers about running work | [Doc](./2026-11-24-app-shell-busy-check-story.md) | 2 | S2, S3, S4 | — | ⬜ Not started |
 

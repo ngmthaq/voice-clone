@@ -30,9 +30,9 @@
     "semantic_hash": "b3a2f1de6bbd4ec8488e83b843069569"
   },
   "src/voice_clone/cli.py": {
-    "mtime": 1795485852.9676406,
-    "seen": 1795487002.3487601,
-    "ast_hash": "4e854abff7540d390f4e5bdef8a74f63",
+    "mtime": 1795487790.723545,
+    "seen": 1795488780.548586,
+    "ast_hash": "78fb406a86a6e9acbab73d44cc50ba5e",
     "semantic_hash": ""
   },
   "src/voice_clone/logging_setup.py": {
@@ -54,15 +54,15 @@
     "semantic_hash": ""
   },
   "tests/test_cli.py": {
-    "mtime": 1795485852.97888,
-    "seen": 1795487002.348798,
-    "ast_hash": "41860956358f115f1639a9cd20436ac1",
+    "mtime": 1795488701.332167,
+    "seen": 1795488780.548629,
+    "ast_hash": "200eab4eded7964f3011a2e814bdb1bc",
     "semantic_hash": ""
   },
   "src/voice_clone/controllers/__init__.py": {
-    "mtime": 1795486311.6311283,
-    "seen": 1795487002.348761,
-    "ast_hash": "9cf25498097f5b9485975f44f57a5520",
+    "mtime": 1795487767.5792248,
+    "seen": 1795488780.548586,
+    "ast_hash": "c080bc77b5cc733c35ef1d2838157878",
     "semantic_hash": ""
   },
   "src/voice_clone/domain/__init__.py": {
@@ -282,9 +282,9 @@
     "semantic_hash": ""
   },
   "src/voice_clone/views/setup_screen.py": {
-    "mtime": 1795485852.975408,
-    "seen": 1795487002.348783,
-    "ast_hash": "251afd4d3ac0c94cce9d111e783ed17b",
+    "mtime": 1795487915.255515,
+    "seen": 1795488780.548612,
+    "ast_hash": "ce31f6a2f80cb80da3a1e4e6b50419ad",
     "semantic_hash": ""
   },
   "src/voice_clone/views/train_panel_widget.py": {
@@ -432,9 +432,9 @@
     "semantic_hash": ""
   },
   "tests/views/test_setup_screen.py": {
-    "mtime": 1795485852.9793582,
-    "seen": 1795487002.3488,
-    "ast_hash": "a4bae0d5bc7e5c994f37c5c5005b20bb",
+    "mtime": 1795488322.2322388,
+    "seen": 1795488780.548631,
+    "ast_hash": "445610eb5733746bbfe7cadfc3366025",
     "semantic_hash": ""
   },
   "tests/views/test_train_screen.py": {
@@ -570,9 +570,9 @@
     "semantic_hash": ""
   },
   ".claude/references/PROJECT_OVERVIEW.md": {
-    "mtime": 1795486526.7282462,
-    "seen": 1795487002.3488152,
-    "ast_hash": "4925659f0a3df11dbb2cac1b521f41cb",
+    "mtime": 1795488635.363603,
+    "seen": 1795488780.548646,
+    "ast_hash": "c1dedaa14aed32f780bd11345578b870",
     "semantic_hash": ""
   },
   ".claude/skills/agile-planning/SKILL.md": {
@@ -948,15 +948,15 @@
     "semantic_hash": ""
   },
   "plans/2026-11-24-refactor-codebase-to-mvc-overview.md": {
-    "mtime": 1795485852.9668217,
-    "seen": 1795487002.348858,
-    "ast_hash": "b3825b323fa457b0b141dd72452adc5d",
+    "mtime": 1795488635.3683047,
+    "seen": 1795488780.548688,
+    "ast_hash": "5d856339b6b56acb05870b03de2de9c4",
     "semantic_hash": ""
   },
   "plans/2026-11-24-setup-controller-story.md": {
-    "mtime": 1795485852.966957,
-    "seen": 1795487002.348858,
-    "ast_hash": "1e14871dfe5ea84375879bfa37daadab",
+    "mtime": 1795488635.3702052,
+    "seen": 1795488780.548689,
+    "ast_hash": "9abea884555fda32bdc84a86b84053b4",
     "semantic_hash": ""
   },
   "plans/2026-11-24-train-controller-story.md": {
@@ -966,9 +966,9 @@
     "semantic_hash": ""
   },
   "plans/2026-11-24-voice-changer-controller-story.md": {
-    "mtime": 1795485852.967231,
-    "seen": 1795487002.3488588,
-    "ast_hash": "9011f2c587dc2300e1e68a0adb02903a",
+    "mtime": 1795487010.786025,
+    "seen": 1795488780.5486898,
+    "ast_hash": "540e13996ca750a18024147b15f42c30",
     "semantic_hash": ""
   },
   "src/voice_clone/controllers/changer_controller.py": {
@@ -990,9 +990,27 @@
     "semantic_hash": ""
   },
   "plans/2026-11-24-09-07-30-s2-voice-changer-controller.md": {
-    "mtime": 1795486104.0651069,
-    "seen": 1795487002.348856,
-    "ast_hash": "04df42aee107e4957ee2a90883c772b7",
+    "mtime": 1795487010.7888544,
+    "seen": 1795488780.548685,
+    "ast_hash": "de46ff78225281ca49fdff430d8716f3",
+    "semantic_hash": ""
+  },
+  "src/voice_clone/controllers/setup_controller.py": {
+    "mtime": 1795487767.5723085,
+    "seen": 1795488780.548589,
+    "ast_hash": "242b1749b56b6fc8844c03d53a29cef9",
+    "semantic_hash": ""
+  },
+  "tests/controllers/test_setup_controller.py": {
+    "mtime": 1795488322.2423959,
+    "seen": 1795488780.548617,
+    "ast_hash": "bf8398610928b065e6bae1b4de63556c",
+    "semantic_hash": ""
+  },
+  "plans/2026-11-24-09-34-26-s3-setup-controller.md": {
+    "mtime": 1795488635.3726735,
+    "seen": 1795488780.548686,
+    "ast_hash": "8970fdd8e9773d4a329048f0a725fdf3",
     "semantic_hash": ""
   }
 }

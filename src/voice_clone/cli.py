@@ -115,62 +115,40 @@ def _build_parser() -> argparse.ArgumentParser:
 def _run_bench_command(args: argparse.Namespace) -> int:
     import torch
 
-    from voice_clone.domain.bench import apply_engine_options, auto_presets, fits, run_bench
-    from voice_clone.domain.config import PERFORMANCE_PRESETS, load_settings
-    from voice_clone.domain.engine import RvcEngine, base_models_present, select_torch_device
-    from voice_clone.domain.engine.download import base_model_paths
-    from voice_clone.domain.paths import models_dir
-    from voice_clone.domain.profiles.discovery import discover_profiles
+    from voice_clone.controllers.setup_controller import SetupController
+    from voice_clone.domain.bench import BenchResult
+    from voice_clone.domain.config import PERFORMANCE_PRESETS
 
-    settings = load_settings()
-    if not base_models_present(models_dir()):
-        print("Base models are missing. Open the app and choose Check setup first.")
-        return EXIT_ERROR
-    profiles = discover_profiles(voices_dir())
-    wanted = args.voice or settings.profile
-    profile = next((p for p in profiles if p.name == wanted), None)
-    if profile is None and args.voice is None and profiles:
-        profile = profiles[0]
-    if profile is None:
-        print(f"Voice not found: {wanted}" if wanted else "No voices found.")
+    controller = SetupController()
+    session = controller.prepare_bench(args.voice, args.cpu, args.threads, args.precision)
+    if isinstance(session, str):
+        print(session)
         return EXIT_ERROR
 
-    device = torch.device("cpu") if args.cpu else select_torch_device()
-    threads = settings.cpu_threads if args.threads is None else args.threads
-    precision = args.precision or settings.precision
-    engine = RvcEngine(
-        base_model_paths(models_dir()), device, cpu_threads=threads, precision=precision
-    )
     presets = args.preset or list(PERFORMANCE_PRESETS)
-    print(f"Voice: {profile.name}   Device: {device} ({engine.precision})", end="")
-    print(f"   CPU threads: {torch.get_num_threads()}" if device.type == "cpu" else "")
+    print(
+        f"Voice: {session.profile.name}   Device: {session.device} ({session.engine.precision})",
+        end="",
+    )
+    print(f"   CPU threads: {torch.get_num_threads()}" if session.device.type == "cpu" else "")
     print(f"{'Preset':<10}{'Block':>7}{'Load':>7}{'p95':>7}{'Slow':>6}   Stage ms per hop")
-    fitting: list[str] = []
+
+    def print_row(name: str, result: BenchResult) -> None:
+        stages = "  ".join(f"{k} {v:.0f}" for k, v in result.stage_ms.items())
+        print(
+            f"{name:<10}{result.block_ms:>5}ms{result.mean_load:>7.2f}{result.p95_load:>7.2f}"
+            f"{result.slow_blocks:>6}   {stages}"
+        )
+
     try:
-        for name in presets:
-            values = PERFORMANCE_PRESETS[name][1]
-            apply_engine_options(engine, values)
-            if engine.output_sample_rate == 0:
-                engine.load(profile)
-            result = run_bench(engine, values, args.seconds)
-            if (
-                fits(result)
-                and len(fitting) == presets.index(name)
-                and name in auto_presets(PERFORMANCE_PRESETS)
-            ):
-                fitting.append(name)
-            stages = "  ".join(f"{k} {v:.0f}" for k, v in result.stage_ms.items())
-            print(
-                f"{name:<10}{result.block_ms:>5}ms{result.mean_load:>7.2f}{result.p95_load:>7.2f}"
-                f"{result.slow_blocks:>6}   {stages}"
-            )
+        recommended = controller.bench(session, presets, args.seconds, print_row)
     except VoiceCloneError as exc:
         print(f"Error: {exc}")
         return EXIT_ERROR
     except KeyboardInterrupt:
         return EXIT_INTERRUPTED
-    if fitting:
-        print(f"Recommended: {fitting[-1]} (heaviest preset up to Balanced with p95 under 0.7)")
+    if recommended is not None:
+        print(f"Recommended: {recommended} (heaviest preset up to Balanced with p95 under 0.7)")
     else:
         print("None of these presets keeps up comfortably (p95 under 0.7).")
     return 0

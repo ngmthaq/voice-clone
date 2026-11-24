@@ -4,6 +4,7 @@ import sys
 import pytest
 from textual.widgets import Button
 
+import voice_clone.controllers.setup_controller as setup_controller
 import voice_clone.domain.config as config
 import voice_clone.views.setup_screen as setup_screen
 from voice_clone.domain.engine.download import base_model_files
@@ -17,7 +18,7 @@ from voice_clone.views.app import VoiceCloneApp
 def environment(tmp_path, monkeypatch):
     models = tmp_path / "models"
     monkeypatch.setattr(config, "settings_path", lambda: tmp_path / "settings.toml")
-    monkeypatch.setattr(setup_screen, "models_dir", lambda: models)
+    monkeypatch.setattr(setup_controller, "models_dir", lambda: models)
 
     def facts():
         return Facts(
@@ -35,7 +36,7 @@ def environment(tmp_path, monkeypatch):
             python312="/bin/python3.12",
         )
 
-    monkeypatch.setattr(setup_screen, "gather_facts", facts)
+    monkeypatch.setattr(setup_controller, "gather_facts", facts)
     return models
 
 
@@ -93,7 +94,7 @@ def test_missing_models_show_the_download_button(environment):
 
 
 def test_download_fills_the_models_and_checks_again(environment, monkeypatch):
-    monkeypatch.setattr(setup_screen, "ensure_base_models", _fill_models)
+    monkeypatch.setattr(setup_controller, "ensure_base_models", _fill_models)
 
     async def body(app, pilot):
         app.screen.query_one("#download-models", Button).press()
@@ -111,7 +112,7 @@ def test_failed_download_shows_the_error_and_retry(environment, monkeypatch):
     def failing(models_dir, on_progress=None):
         raise ModelDownloadError("Could not download rmvpe.pt.")
 
-    monkeypatch.setattr(setup_screen, "ensure_base_models", failing)
+    monkeypatch.setattr(setup_controller, "ensure_base_models", failing)
 
     async def body(app, pilot):
         app.screen.query_one("#download-models", Button).press()
@@ -124,7 +125,7 @@ def test_failed_download_shows_the_error_and_retry(environment, monkeypatch):
 
 def test_everything_ready(environment, monkeypatch):
     _fill_models(environment)
-    real = setup_screen.gather_facts
+    real = setup_controller.gather_facts
 
     def ready():
         facts = real()
@@ -132,7 +133,7 @@ def test_everything_ready(environment, monkeypatch):
         facts.applio_installed = True
         return facts
 
-    monkeypatch.setattr(setup_screen, "gather_facts", ready)
+    monkeypatch.setattr(setup_controller, "gather_facts", ready)
 
     async def body(app, pilot):
         return app.screen.query_one("#download-models").display, _status(app)
@@ -167,15 +168,15 @@ class FakeApplio:
 def fake_applio(environment, monkeypatch):
     FakeApplio.installed = False
     FakeApplio.script = "print('cloned Applio', flush=True)"
-    monkeypatch.setattr(setup_screen, "Applio", FakeApplio)
-    real = setup_screen.gather_facts
+    monkeypatch.setattr(setup_controller, "Applio", FakeApplio)
+    real = setup_controller.gather_facts
 
     def facts():
         result = real()
         result.applio_installed = FakeApplio.installed
         return result
 
-    monkeypatch.setattr(setup_screen, "gather_facts", facts)
+    monkeypatch.setattr(setup_controller, "gather_facts", facts)
     return FakeApplio
 
 
@@ -225,27 +226,27 @@ def test_stop_install_applio(fake_applio):
         await pilot.pause()
         still_here = isinstance(app.screen, SetupScreen)
         button.press()
-        await _wait_for(pilot, lambda: _status(app) == setup_screen.APPLIO_STOPPED_MESSAGE)
+        await _wait_for(pilot, lambda: _status(app) == setup_controller.APPLIO_STOPPED_MESSAGE)
         return during, still_here, _status(app), str(button.label)
 
     during, still_here, status, label = _run(body)
 
     assert during == ("Stop install", False, True)
     assert still_here
-    assert status == setup_screen.APPLIO_STOPPED_MESSAGE
+    assert status == setup_controller.APPLIO_STOPPED_MESSAGE
     assert label == "Install Applio (several GB)"
     assert not fake_applio.installed
 
 
 def test_install_applio_is_hidden_without_git(fake_applio, monkeypatch):
-    real = setup_screen.gather_facts
+    real = setup_controller.gather_facts
 
     def no_git():
         result = real()
         result.git = None
         return result
 
-    monkeypatch.setattr(setup_screen, "gather_facts", no_git)
+    monkeypatch.setattr(setup_controller, "gather_facts", no_git)
 
     async def body(app, pilot):
         return app.screen.query_one("#install-applio").display
@@ -266,11 +267,11 @@ def test_measure_speed_saves_the_best_preset_and_says_so(environment, monkeypatc
 
     def fake_measure(on_result=None):
         calls.append(True)
-        result = setup_screen.bench.BenchResult(300, [0.5, 0.5])
+        result = setup_controller.BenchResult(300, [0.5, 0.5])
         on_result("balanced", result)
         return "balanced", {"balanced": result}
 
-    monkeypatch.setattr(setup_screen.bench, "measure_and_save", fake_measure)
+    monkeypatch.setattr(setup_controller, "measure_and_save", fake_measure)
 
     async def body(app, pilot):
         button = app.screen.query_one("#measure-speed", Button)
@@ -289,9 +290,9 @@ def test_measure_speed_saves_the_best_preset_and_says_so(environment, monkeypatc
 
 def test_measure_speed_reports_when_even_minimal_is_too_slow(environment, monkeypatch):
     _fill_models(environment)
-    slow = setup_screen.bench.BenchResult(1000, [1.3])
+    slow = setup_controller.BenchResult(1000, [1.3])
     monkeypatch.setattr(
-        setup_screen.bench, "measure_and_save", lambda on_result=None: (None, {"minimal": slow})
+        setup_controller, "measure_and_save", lambda on_result=None: (None, {"minimal": slow})
     )
 
     async def body(app, pilot):
