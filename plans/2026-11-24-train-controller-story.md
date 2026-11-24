@@ -34,11 +34,11 @@ As a `developer`, I want to `have the training logic in a controller` so that I 
 
 ## Acceptance Criteria
 
-- [ ] Given `controllers/train_controller.py`, when a test starts training with a fake runner, then it builds the same `TrainOptions` and runs the same steps as today.
-- [ ] Given a running training, when the user stops it, then the controller stops the runner the same way as today.
-- [ ] Given training output, when lines arrive, then the controller sends progress and log lines through a callback.
-- [ ] Given `python -m voice_clone train ...`, when it runs, then it uses the train controller with the same flags and output.
-- [ ] Given `TrainPanelWidget`, when I read it, then it only reads form fields and shows controller state.
+- [x] Given `controllers/train_controller.py`, when a test starts training with a fake runner, then it builds the same `TrainOptions` and runs the same steps as today.
+- [x] Given a running training, when the user stops it, then the controller stops the runner the same way as today.
+- [x] Given training output, when lines arrive, then the controller sends progress and log lines through a callback.
+- [x] Given `python -m voice_clone train ...`, when it runs, then it uses the train controller with the same flags and output.
+- [x] Given `TrainPanelWidget`, when I read it, then it only reads form fields and shows controller state.
 
 ## Tasks
 

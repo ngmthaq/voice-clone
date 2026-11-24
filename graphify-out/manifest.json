@@ -30,9 +30,9 @@
     "semantic_hash": "b3a2f1de6bbd4ec8488e83b843069569"
   },
   "src/voice_clone/cli.py": {
-    "mtime": 1795487790.723545,
-    "seen": 1795488780.548586,
-    "ast_hash": "78fb406a86a6e9acbab73d44cc50ba5e",
+    "mtime": 1795501792.6119769,
+    "seen": 1795501828.148181,
+    "ast_hash": "7c52b3d993dce967f42b5ba860e435bc",
     "semantic_hash": ""
   },
   "src/voice_clone/logging_setup.py": {
@@ -54,15 +54,15 @@
     "semantic_hash": ""
   },
   "tests/test_cli.py": {
-    "mtime": 1795488701.332167,
-    "seen": 1795488780.548629,
-    "ast_hash": "200eab4eded7964f3011a2e814bdb1bc",
+    "mtime": 1795501792.6134562,
+    "seen": 1795501828.148227,
+    "ast_hash": "ca849166d6758906a509bbe6c6efea49",
     "semantic_hash": ""
   },
   "src/voice_clone/controllers/__init__.py": {
-    "mtime": 1795487767.5792248,
-    "seen": 1795488780.548586,
-    "ast_hash": "c080bc77b5cc733c35ef1d2838157878",
+    "mtime": 1795501792.6124237,
+    "seen": 1795501828.148181,
+    "ast_hash": "c23d440742bb6d1ba39bf7c2a0b411bb",
     "semantic_hash": ""
   },
   "src/voice_clone/domain/__init__.py": {
@@ -288,9 +288,9 @@
     "semantic_hash": ""
   },
   "src/voice_clone/views/train_panel_widget.py": {
-    "mtime": 1795485852.9755478,
-    "seen": 1795487002.3487842,
-    "ast_hash": "d4b2dd7e43d6d16e0b7c7b901777fff6",
+    "mtime": 1795501792.61294,
+    "seen": 1795501828.1482089,
+    "ast_hash": "6f77bc82d0f041261b3c8e285cf90e59",
     "semantic_hash": ""
   },
   "src/voice_clone/views/train_screen.py": {
@@ -438,9 +438,9 @@
     "semantic_hash": ""
   },
   "tests/views/test_train_screen.py": {
-    "mtime": 1795486640.5514522,
-    "seen": 1795487002.3488011,
-    "ast_hash": "27734eb2d4f0c9c88c83c1d6f29cfbed",
+    "mtime": 1795501792.6139395,
+    "seen": 1795501828.1482291,
+    "ast_hash": "bf4dc08f95892550b78b154fde463242",
     "semantic_hash": ""
   },
   ".claude/AGENTS.md": {
@@ -474,8 +474,8 @@
     "semantic_hash": ""
   },
   ".claude/guides/AAA_TESTING.md": {
-    "mtime": 1795483441.5824246,
-    "seen": 1795485668.815069,
+    "mtime": 1795501466.3946977,
+    "seen": 1795501828.148233,
     "ast_hash": "a65684b2af8a49049e455f06d97a8f49",
     "semantic_hash": ""
   },
@@ -504,8 +504,8 @@
     "semantic_hash": ""
   },
   ".claude/guides/CLEAN_CODE/SEPARATION_OF_CONCERNS.md": {
-    "mtime": 1795483441.581658,
-    "seen": 1795485668.815072,
+    "mtime": 1795501466.394975,
+    "seen": 1795501828.148236,
     "ast_hash": "8e264fd9f827836557604c47e9ecb9bd",
     "semantic_hash": ""
   },
@@ -552,8 +552,8 @@
     "semantic_hash": ""
   },
   ".claude/guides/SECURITY_SCANNER/VULN_CATEGORIES.md": {
-    "mtime": 1795483441.5831766,
-    "seen": 1795485668.815076,
+    "mtime": 1795501466.3952074,
+    "seen": 1795501828.1482408,
     "ast_hash": "440835cf89e6197cbd9ebafcd3181468",
     "semantic_hash": ""
   },
@@ -570,9 +570,9 @@
     "semantic_hash": ""
   },
   ".claude/references/PROJECT_OVERVIEW.md": {
-    "mtime": 1795488635.363603,
-    "seen": 1795488780.548646,
-    "ast_hash": "c1dedaa14aed32f780bd11345578b870",
+    "mtime": 1795501814.112708,
+    "seen": 1795501828.148243,
+    "ast_hash": "b18592ab05ed44492507982209465e14",
     "semantic_hash": ""
   },
   ".claude/skills/agile-planning/SKILL.md": {
@@ -948,9 +948,9 @@
     "semantic_hash": ""
   },
   "plans/2026-11-24-refactor-codebase-to-mvc-overview.md": {
-    "mtime": 1795488635.3683047,
-    "seen": 1795488780.548688,
-    "ast_hash": "5d856339b6b56acb05870b03de2de9c4",
+    "mtime": 1795501814.1131015,
+    "seen": 1795501828.148284,
+    "ast_hash": "8e273eb0452d1ca1014a56d5d6ae6618",
     "semantic_hash": ""
   },
   "plans/2026-11-24-setup-controller-story.md": {
@@ -960,9 +960,9 @@
     "semantic_hash": ""
   },
   "plans/2026-11-24-train-controller-story.md": {
-    "mtime": 1795485852.9670882,
-    "seen": 1795487002.3488588,
-    "ast_hash": "67613afc6e0f2ea6033f794e10bf725a",
+    "mtime": 1795501814.1137447,
+    "seen": 1795501828.148285,
+    "ast_hash": "5e9aa84cbc1ba243ede80a22c0998ce7",
     "semantic_hash": ""
   },
   "plans/2026-11-24-voice-changer-controller-story.md": {
@@ -1011,6 +1011,24 @@
     "mtime": 1795488635.3726735,
     "seen": 1795488780.548686,
     "ast_hash": "8970fdd8e9773d4a329048f0a725fdf3",
+    "semantic_hash": ""
+  },
+  "src/voice_clone/controllers/train_controller.py": {
+    "mtime": 1795501207.641898,
+    "seen": 1795501828.148184,
+    "ast_hash": "c2e5d92a5440bd6c957feb157404e2e7",
+    "semantic_hash": ""
+  },
+  "tests/controllers/test_train_controller.py": {
+    "mtime": 1795501648.555343,
+    "seen": 1795501828.148213,
+    "ast_hash": "df56fdf4526294e69a4173234d375598",
+    "semantic_hash": ""
+  },
+  "plans/2026-11-24-13-18-55-s4-train-controller.md": {
+    "mtime": 1795501814.1174626,
+    "seen": 1795501828.148282,
+    "ast_hash": "ef036c45c2263d3da895b4459f0a433e",
     "semantic_hash": ""
   }
 }

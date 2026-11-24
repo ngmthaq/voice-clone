@@ -6,13 +6,14 @@ import pytest
 from textual.widgets import Button, Checkbox, Input, ProgressBar
 
 import voice_clone.controllers.changer_controller as changer_controller
+import voice_clone.controllers.train_controller as train_controller
 import voice_clone.domain.config as config
 import voice_clone.views.train_panel_widget as train_panel
+from voice_clone.controllers.train_controller import STOPPED_MESSAGE, _parse_paths
 from voice_clone.domain.audio import AudioDevice
 from voice_clone.domain.errors import TrainingError, TrainingStoppedError
 from voice_clone.views import HomeScreen, MainScreen, TrainScreen
 from voice_clone.views.app import VoiceCloneApp
-from voice_clone.views.train_panel_widget import STOPPED_MESSAGE, _Event, _parse_paths
 
 MIC = AudioDevice(0, "Mic", 1, 0, 48000.0)
 BLACKHOLE = AudioDevice(1, "BlackHole 2ch", 2, 2, 48000.0)
@@ -28,8 +29,8 @@ def environment(tmp_path, monkeypatch) -> Path:
     monkeypatch.setattr(changer_controller, "list_input_devices", lambda: [MIC])
     monkeypatch.setattr(changer_controller, "list_output_devices", lambda: [BLACKHOLE])
     monkeypatch.setattr(changer_controller, "base_models_present", lambda _: True)
-    monkeypatch.setattr(train_panel, "voices_dir", lambda: voices)
-    monkeypatch.setattr(train_panel, "training_dir", lambda: tmp_path / "training")
+    monkeypatch.setattr(train_controller, "voices_dir", lambda: voices)
+    monkeypatch.setattr(train_controller, "training_dir", lambda: tmp_path / "training")
     return tmp_path
 
 
@@ -119,7 +120,7 @@ def test_trained_voice_shows_in_the_voice_changer(environment, monkeypatch):
         (voices_root / options.name / f"{options.name}.pth").write_bytes(b"x")
         return voices_root / options.name
 
-    monkeypatch.setattr(train_panel, "train_voice", fake_train)
+    monkeypatch.setattr(train_controller, "train_voice", fake_train)
 
     async def body(app, pilot):
         app.screen.query_one("#train-epochs", Input).value = "50"
@@ -156,7 +157,7 @@ def test_stop_training_and_back_is_blocked_while_training(environment, monkeypat
             time.sleep(0.01)
         raise TrainingStoppedError("stopped")
 
-    monkeypatch.setattr(train_panel, "train_voice", fake_train)
+    monkeypatch.setattr(train_controller, "train_voice", fake_train)
 
     async def body(app, pilot):
         await _press_start(app, pilot, environment / "rec.m4a")
@@ -186,7 +187,7 @@ def test_training_error_is_shown(environment, monkeypatch):
     def fake_train(*args, **kwargs):
         raise TrainingError("Python 3.12 was not found.")
 
-    monkeypatch.setattr(train_panel, "train_voice", fake_train)
+    monkeypatch.setattr(train_controller, "train_voice", fake_train)
 
     async def body(app, pilot):
         await _press_start(app, pilot, environment / "rec.m4a")
@@ -202,9 +203,9 @@ def test_training_error_is_shown(environment, monkeypatch):
 def test_epoch_lines_move_the_progress_bar(environment):
     async def body(app, pilot):
         panel = app.screen.query_one("#train-panel")
-        panel._target_epochs = 200
-        panel._voice_name = "me"
-        panel._events.append(_Event("line", "me | epoch=50 | step=1000 | time=10:00:00"))
+        panel._controller._target_epochs = 200
+        panel._controller._voice_name = "me"
+        panel._controller._events.append(("line", "me | epoch=50 | step=1000 | time=10:00:00"))
         await pilot.pause(train_panel.REFRESH_SECONDS * 2)
         bar = app.screen.query_one("#train-progress", ProgressBar)
         return bar.progress, bar.total, _status(app)
@@ -244,7 +245,7 @@ def test_training_options_are_saved_and_restored(environment, monkeypatch):
         seen["options"] = options
         return voices_root / options.name
 
-    monkeypatch.setattr(train_panel, "train_voice", fake_train)
+    monkeypatch.setattr(train_controller, "train_voice", fake_train)
 
     async def start(app, pilot):
         app.screen.query_one("#train-epochs", Input).value = "120"
@@ -272,7 +273,7 @@ def _start_blocking_training(monkeypatch):
         release.wait(10)
         return voices_root / options.name
 
-    monkeypatch.setattr(train_panel, "train_voice", fake_train)
+    monkeypatch.setattr(train_controller, "train_voice", fake_train)
     return release
 
 

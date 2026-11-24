@@ -22,7 +22,7 @@ def test_train_passes_options(monkeypatch: pytest.MonkeyPatch) -> None:
     def fake_train(options, applio, training_root, voices_root):
         seen["options"] = options
 
-    monkeypatch.setattr("voice_clone.domain.training.train_voice", fake_train)
+    monkeypatch.setattr("voice_clone.controllers.train_controller.train_voice", fake_train)
 
     code = cli.main(["train", "a.m4a", "b.m4a", "--name", "me", "--epochs", "50"])
 
@@ -36,7 +36,7 @@ def test_train_error_returns_exit_code_1(monkeypatch: pytest.MonkeyPatch) -> Non
     def fake_train(*_: object) -> None:
         raise TrainingError("boom")
 
-    monkeypatch.setattr("voice_clone.domain.training.train_voice", fake_train)
+    monkeypatch.setattr("voice_clone.controllers.train_controller.train_voice", fake_train)
 
     assert cli.main(["train", "a.m4a"]) == cli.EXIT_ERROR
 
@@ -45,7 +45,7 @@ def test_train_ctrl_c_returns_exit_code_130(monkeypatch: pytest.MonkeyPatch) -> 
     def fake_train(*_: object) -> None:
         raise KeyboardInterrupt
 
-    monkeypatch.setattr("voice_clone.domain.training.train_voice", fake_train)
+    monkeypatch.setattr("voice_clone.controllers.train_controller.train_voice", fake_train)
 
     assert cli.main(["train", "a.m4a"]) == cli.EXIT_INTERRUPTED
 

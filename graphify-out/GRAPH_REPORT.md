@@ -1,59 +1,61 @@
 # Graph Report - voice-clone  (2026-11-24)
 
 ## Corpus Check
-- 169 files · ~85,627 words
+- 172 files · ~87,770 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 6 file(s) not represented in the graph (top: (none) 4, .tcss 1, .ipynb 1)
 
 ## Summary
-- 2072 nodes · 4583 edges · 154 communities (123 shown, 31 thin omitted)
-- Extraction: 84% EXTRACTED · 16% INFERRED · 0% AMBIGUOUS · INFERRED: 728 edges (avg confidence: 0.91)
+- 2144 nodes · 4815 edges · 150 communities (124 shown, 26 thin omitted)
+- Extraction: 82% EXTRACTED · 18% INFERRED · 0% AMBIGUOUS · INFERRED: 853 edges (avg confidence: 0.91)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `cac3d3d0`
+- Built from commit: `f6434e2d`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
-- TrainingError
+- errors.py
 - ConversionPipeline
 - test_pipeline.py
 - MainScreen
 - rmvpe.py
 - test_main_screen.py
 - SetupScreen
-- _run
+- test_setup_screen.py
 - test_train_screen.py
 - test_rvc_engine.py
 - test_trainer.py
 - download.py
-- numpy
-- StreamingRunner
-- setup_controller.py
 - AudioDevice
-- pytest
-- cli.py
+- StreamingRunner
+- bench.py
+- test_devices.py
+- TrainingError
+- pathlib
 - test_applio.py
 - rvc_engine.py
 - test_device.py
+- main_screen.py
 - models.py
 - torch
 - test_changer_controller.py
 - agile-planning/SKILL.md
 - test_cli.py
-- RingBuffer
-- TrainPanelWidget
-- RvcEngine
+- Phase 6 — Create Tickets
+- TrainController
+- Phase 3 — Break Down Work
 - RMVPE
 - LayerNorm
-- ndarray
+- RvcEngine
 - pull-request/SKILL.md
 - Tester
-- PosteriorEncoder
+- SynthesizerTrnMs256NSFsid
 - Applio
 - evaluate
 - MultiHeadAttention
+- party-mode/SKILL.md
 - changer_controller.py
 - onboarding/SKILL.md
 - Secret Scanning Script
@@ -61,11 +63,11 @@
 - Claude Hook Settings
 - WN
 - SetupController
-- .__init__
+- Phase 5 — Generate Docs
 - Project Root
 - DiscriminatorP
 - transforms.py
-- discover_profiles
+- VoiceProfile
 - Developer
 - AAA — Arrange, Act, Assert
 - Execution Workflow
@@ -132,45 +134,41 @@
 - Step 4 — Approval Gate
 - setup_check.py
 - GateSettings
-- EngineStub
+- conftest.py
 - S2 — Voice changer controller
 - Voice files
-- train_panel_widget.py
-- test_setup_screen.py
+- train_controller.py
+- environment
 - ChangerController
 - FakeTimer
-- start_running
-- loaded
+- TextEncoder
+- .load
 - HomeScreen
 - step-6-test-report.md
-- labeled_field
-- DRY.md
+- ElementwiseAffine
+- FakeApplio
 - _Stoppable
 - S5 — App shell asks controllers about running work
 - VoiceCloneApp
-- VoiceCloneError
-- Title: Plan — S3 Setup controller
+- setup_controller.py
 - test_pipeline_started_after_the_screen_closed_is_stopped
-- Testing Workflow
 - LevelMeterWidget
-- measure_environment
 - .stop_install
 - test_stop_resets_the_level_meters
 - KISS.md
-- SEPARATION_OF_CONCERNS.md
 - test_slow_conversion_shows_warning
 
 ## God Nodes (most connected - your core abstractions)
-1. `SetupController` - 103 edges
+1. `SetupController` - 104 edges
 2. `ChangerController` - 70 edges
-3. `MainScreen` - 53 edges
-4. `TrainingError` - 45 edges
-5. `ConversionPipeline` - 41 edges
-6. `SetupScreen` - 37 edges
-7. `load_settings()` - 36 edges
-8. `Settings` - 34 edges
-9. `RvcEngine` - 31 edges
-10. `_make()` - 31 edges
+3. `TrainController` - 63 edges
+4. `MainScreen` - 53 edges
+5. `TrainingError` - 45 edges
+6. `ConversionPipeline` - 41 edges
+7. `load_settings()` - 38 edges
+8. `VoiceCloneError` - 37 edges
+9. `SetupScreen` - 37 edges
+10. `Settings` - 36 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `Files in Scope` --references--> `ChangerController`  [INFERRED]
@@ -187,27 +185,27 @@
 ## Import Cycles
 - None detected.
 
-## Communities (154 total, 31 thin omitted)
+## Communities (150 total, 26 thin omitted)
 
-### Community 0 - "TrainingError"
-Cohesion: 0.25
-Nodes (7): TrainingError, TrainingStoppedError, git_head(), find_python(), require_tool(), run_command(), _starts()
+### Community 0 - "errors.py"
+Cohesion: 0.16
+Nodes (12): git_head(), CommandRunner, find_python(), require_tool(), run_command(), _starts(), DatasetInfo, find_latest_weights() (+4 more)
 
 ### Community 1 - "ConversionPipeline"
-Cohesion: 0.09
-Nodes (8): Naming, _close_stream(), ConversionPipeline, _Engine, _fit_history(), _rms(), _tail_or_pad(), DeviceNotFoundError
+Cohesion: 0.07
+Nodes (31): Naming, _db(), NoiseGate, _open_early(), _close_stream(), ConversionPipeline, _Engine, _fit_history() (+23 more)
 
 ### Community 2 - "test_pipeline.py"
-Cohesion: 0.06
-Nodes (44): fake_engine(), FakeEngine, input_device(), output_device(), _block(), fake_sd(), FakeInputStream, FakeOutputStream (+36 more)
+Cohesion: 0.08
+Nodes (40): FakeEngine, _block(), fake_sd(), FakeInputStream, FakeOutputStream, FakeStream, _make(), _settled_rms() (+32 more)
 
 ### Community 3 - "MainScreen"
-Cohesion: 0.13
+Cohesion: 0.18
 Nodes (3): Functional Requirements, Tasks, MainScreen
 
 ### Community 4 - "rmvpe.py"
 Cohesion: 0.06
-Nodes (10): BiGRU, ConvBlockRes, Decoder, DeepUnet, Encoder, Intermediate, MelSpectrogram, ResDecoderBlock (+2 more)
+Nodes (11): BiGRU, ConvBlockRes, Decoder, DeepUnet, E2E, Encoder, Intermediate, MelSpectrogram (+3 more)
 
 ### Community 5 - "test_main_screen.py"
 Cohesion: 0.10
@@ -217,17 +215,17 @@ Nodes (21): empty_environment(), _run(), test_advanced_reset_restores_all_advanc
 Cohesion: 0.11
 Nodes (13): Task List, Acceptance Criteria, Estimate, Functional Requirements, Goal, Non-Functional Requirements, Out of Scope, Requirements (+5 more)
 
-### Community 7 - "_run"
+### Community 7 - "test_setup_screen.py"
 Cohesion: 0.13
-Nodes (21): _fill_models(), _run(), scenario(), _settle(), _status(), test_download_fills_the_models_and_checks_again(), body(), test_escape_goes_back_home() (+13 more)
+Nodes (28): _applio_line(), _fill_models(), _lines(), _run(), scenario(), _settle(), _status(), test_download_fills_the_models_and_checks_again() (+20 more)
 
 ### Community 8 - "test_train_screen.py"
 Cohesion: 0.12
 Nodes (29): environment(), _press_start(), _run(), scenario(), _start_blocking_training(), _status(), test_a_different_key_does_not_confirm(), body() (+21 more)
 
 ### Community 9 - "test_rvc_engine.py"
-Cohesion: 0.08
-Nodes (20): _HubertContentEncoder, ModelLoadError, _engine(), FakeEncoder, FakePitch, index_loads(), test_convert_before_load_raises_model_load_error(), test_convert_tail_decodes_only_the_last_frames() (+12 more)
+Cohesion: 0.07
+Nodes (24): _HubertContentEncoder, ModelLoadError, _cpu_rmvpe_init(), _engine(), FakeEncoder, FakePitch, index_loads(), test_convert_before_load_raises_model_load_error() (+16 more)
 
 ### Community 10 - "test_trainer.py"
 Cohesion: 0.17
@@ -237,101 +235,109 @@ Nodes (15): _fake_prepare(), FakeApplio, _ffmpeg(), _run(), test_bad_sample_rate
 Cohesion: 0.13
 Nodes (19): base_model_files(), base_model_paths(), base_models_present(), BaseModelFile, BaseModelPaths, ensure_base_models(), _quiet_progress_bars(), _report() (+11 more)
 
-### Community 12 - "numpy"
-Cohesion: 0.28
-Nodes (13): _db(), NoiseGate, _open_early(), _noise(), _speech(), test_background_hiss_is_silenced(), test_digital_silence_does_not_lower_the_noise_floor(), test_gain_changes_are_ramped_without_clicks() (+5 more)
+### Community 12 - "AudioDevice"
+Cohesion: 0.49
+Nodes (6): AudioDevice, find_device_by_name(), list_input_devices(), list_output_devices(), _query_devices(), rescan_devices()
 
 ### Community 13 - "StreamingRunner"
-Cohesion: 0.15
-Nodes (11): StreamingRunner, Collected, _python(), test_failed_command_raises(), test_lines_and_progress_redraws_are_split(), test_missing_program_raises(), test_no_command_runs_after_stop(), test_stop_ends_the_command_and_its_children() (+3 more)
+Cohesion: 0.14
+Nodes (13): Non-Functional Requirements, TrainingStoppedError, StreamingRunner, Collected, _python(), test_failed_command_raises(), test_lines_and_progress_redraws_are_split(), test_missing_program_raises() (+5 more)
 
-### Community 14 - "setup_controller.py"
-Cohesion: 0.15
-Nodes (22): _missing(), apply_engine_options(), auto_presets(), BenchResult, fits(), measure_and_save(), pick_preset(), run_bench() (+14 more)
+### Community 14 - "bench.py"
+Cohesion: 0.11
+Nodes (27): Approach Summary / Goal, Files in Scope, Non-Functional Requirements, Open Questions / Blockers, Status, Title: Plan — S3 Setup controller, apply_engine_options(), auto_presets() (+19 more)
 
-### Community 15 - "AudioDevice"
-Cohesion: 0.18
-Nodes (19): Task List, AudioDevice, find_device_by_name(), find_virtual_output(), list_input_devices(), list_output_devices(), _query_devices(), rescan_devices() (+11 more)
+### Community 15 - "test_devices.py"
+Cohesion: 0.23
+Nodes (12): find_virtual_output(), _device(), fake_query(), _info(), test_devices_keep_their_portaudio_index(), test_find_device_by_name_returns_exact_match(), test_find_device_by_name_returns_none_for_none_or_unknown(), test_find_virtual_output_matches_blackhole() (+4 more)
 
-### Community 16 - "pytest"
+### Community 16 - "TrainingError"
+Cohesion: 0.25
+Nodes (16): TrainingError, collect_audio_files(), _duration_seconds(), prepare_dataset(), _refuse_inputs_inside(), _safe_stem(), _fake_ffmpeg(), test_collect_finds_audio_in_folder_recursively() (+8 more)
+
+### Community 17 - "pathlib"
 Cohesion: 0.20
-Nodes (16): CommandRunner, collect_audio_files(), _duration_seconds(), prepare_dataset(), _refuse_inputs_inside(), _safe_stem(), _fake_ffmpeg(), test_collect_finds_audio_in_folder_recursively() (+8 more)
-
-### Community 17 - "cli.py"
-Cohesion: 0.24
-Nodes (6): _build_parser(), main(), _rescan_audio_devices(), _run_train(), setup_logging(), main()
+Nodes (7): _build_parser(), main(), _rescan_audio_devices(), config_dir(), log_dir(), setup_logging(), main()
 
 ### Community 18 - "test_applio.py"
-Cohesion: 0.17
+Cohesion: 0.18
 Nodes (18): _make(), RecordingRunner, _step(), test_core_command_without_install_raises(), test_core_commands_point_applio_to_our_logs_folder(), test_extract_device_avoids_mps_on_macos(), test_extract_fails_when_no_features_are_written(), test_find_python_missing_explains_how_to_install() (+10 more)
 
 ### Community 19 - "rvc_engine.py"
 Cohesion: 0.14
-Nodes (12): _adapt_weight_norm_keys(), _ensure_index(), _load_index(), _load_voice(), _LoadedVoice, _single_thread_faiss(), _synthesizer_class(), SynthesizerTrnMs256NSFsid (+4 more)
+Nodes (12): _adapt_weight_norm_keys(), ContentEncoder, _default_device(), _ensure_index(), _load_index(), _load_voice(), _LoadedVoice, PitchExtractor (+4 more)
 
 ### Community 20 - "test_device.py"
 Cohesion: 0.18
 Nodes (18): auto_cpu_threads(), configure_cpu_threads(), select_torch_device(), use_half_precision(), _capability(), _patch(), test_apple_gpu_uses_fp16_only_when_asked(), test_auto_threads_keeps_small_machines_unchanged() (+10 more)
 
 ### Community 22 - "models.py"
-Cohesion: 0.14
-Nodes (7): get_padding(), init_weights(), TextEncoder, ElementwiseAffine, Flip, Log, ResBlock1
+Cohesion: 0.18
+Nodes (5): get_padding(), init_weights(), Generator, Flip, Log
 
 ### Community 23 - "torch"
 Cohesion: 0.20
 Nodes (15): add_timing_signal_1d(), cat_timing_signal_1d(), convert_pad_shape(), fused_add_tanh_sigmoid_multiply(), generate_path(), get_timing_signal_1d(), kl_divergence(), rand_gumbel() (+7 more)
 
 ### Community 24 - "test_changer_controller.py"
-Cohesion: 0.06
-Nodes (6): saved_toml(), test_begin_start_returns_request_and_loading_status(), test_first_start_on_cpu_without_saved_settings_uses_minimal_preset(), test_load_without_voices_leaves_voice_unset(), test_reset_advanced_restores_default_options(), test_timer_callback_flushes_the_save()
+Cohesion: 0.05
+Nodes (18): EngineStub, saved_toml(), start_running(), test_begin_start_returns_request_and_loading_status(), test_change_pitch_does_not_touch_engine_when_not_converting(), test_change_pitch_updates_running_engine(), test_levels_are_zero_after_stop_even_if_pipeline_reports_while_stopping(), test_pipeline_receives_store_callbacks() (+10 more)
 
 ### Community 25 - "agile-planning/SKILL.md"
-Cohesion: 0.05
-Nodes (38): 1a. Find the input source, 1b. Find the input type, 1c. Show what you got, Phase 1 — Take Input, 2a. Ask clarifying questions first, 2b. Look at the codebase (read-only), 2c. Write the analysis, Phase 2 — Brainstorm (+30 more)
+Cohesion: 0.11
+Nodes (15): 1a. Find the input source, 1b. Find the input type, 1c. Show what you got, Phase 1 — Take Input, 2a. Ask clarifying questions first, 2b. Look at the codebase (read-only), 2c. Write the analysis, Phase 2 — Brainstorm (+7 more)
 
 ### Community 26 - "test_cli.py"
-Cohesion: 0.13
-Nodes (18): _by_values(), _no_log_file(), patch_bench_fakes(), test_bench_ctrl_c_returns_exit_code_130(), test_bench_prints_the_error_when_the_bench_fails(), test_bench_prints_the_table_and_the_recommended_preset(), test_bench_says_when_no_preset_keeps_up(), test_bench_with_an_unknown_voice_prints_a_message_and_returns_error() (+10 more)
+Cohesion: 0.08
+Nodes (22): measure_environment(), __init__(), BenchEngine, _by_values(), _no_log_file(), patch_bench_fakes(), test_bench_ctrl_c_returns_exit_code_130(), test_bench_prints_the_error_when_the_bench_fails() (+14 more)
 
-### Community 27 - "RingBuffer"
-Cohesion: 0.26
-Nodes (10): RingBuffer, test_clear_empties_buffer(), test_non_positive_capacity_is_rejected(), test_overflow_overwrites_oldest_samples(), test_read_returns_written_samples_in_order(), test_trim_below_limit_keeps_everything(), test_trim_drops_oldest_samples_beyond_limit(), test_underrun_zero_pads_the_read() (+2 more)
+### Community 27 - "Phase 6 — Create Tickets"
+Cohesion: 0.22
+Nodes (8): 6a. Choose where to create the tickets, 6b. Create story tickets, 6c. Create task tickets, 6d. Update the overview, 6e. Show a summary, MCP Reference, No MCP — use the browser, Phase 6 — Create Tickets
 
-### Community 28 - "TrainPanelWidget"
-Cohesion: 0.13
-Nodes (12): Acceptance Criteria, Estimate, Functional Requirements, Goal, Non-Functional Requirements, Out of Scope, Requirements, S4 — Train controller (Train screen + `train` command) (+4 more)
+### Community 28 - "TrainController"
+Cohesion: 0.05
+Nodes (46): Acceptance Criteria, Estimate, Functional Requirements, Non-Functional Requirements, Out of Scope, Requirements, S4 — Train controller (Train screen + `train` command), Tasks (+38 more)
+
+### Community 29 - "Phase 3 — Break Down Work"
+Cohesion: 0.25
+Nodes (8): 3a. Epic → User Stories, 3b. User Story → Tasks, Dependencies, How to split a big story, Output format, Phase 3 — Break Down Work, What counts as a user story, What is NOT a user story
 
 ### Community 30 - "RMVPE"
-Cohesion: 0.14
-Nodes (10): _rmvpe_hidden(), _RmvpePitchExtractor, E2E, RMVPE, _cpu_rmvpe_init(), test_convert_length_matches_target_rate(), test_convert_tail_returns_only_the_end(), test_rmvpe_moves_recurrent_part_to_cpu_only_on_apple_gpus() (+2 more)
+Cohesion: 0.27
+Nodes (5): _rmvpe_hidden(), _RmvpePitchExtractor, RMVPE, test_rmvpe_split_matches_the_original_network(), test_rmvpe_with_recurrent_on_cpu_gives_same_pitch()
 
 ### Community 31 - "LayerNorm"
 Cohesion: 0.14
 Nodes (5): Decoder, Encoder, FFN, ConvReluNorm, LayerNorm
 
-### Community 32 - "ndarray"
-Cohesion: 0.13
-Nodes (11): _coarse_pitch(), _fit_length(), _follow_loudness(), _loudness_envelope(), _pad_tail(), _smooth_pitch(), _upsample_frames(), test_follow_loudness_full_matches_source_level() (+3 more)
+### Community 32 - "RvcEngine"
+Cohesion: 0.10
+Nodes (12): _coarse_pitch(), _fit_length(), _follow_loudness(), _loudness_envelope(), _pad_tail(), RvcEngine, _smooth_pitch(), _upsample_frames() (+4 more)
 
 ### Community 33 - "pull-request/SKILL.md"
 Cohesion: 0.13
 Nodes (7): Step 3 — Choose the Target Branch, Step 4 — Collect Context, Step 5 — Fill the Template, Step 7 — Summary Report, Suggested format, Step 4 — Check That the Code Matches the Requirements, Step 9 — Write the Review Report
 
 ### Community 34 - "Tester"
-Cohesion: 0.16
-Nodes (16): Additional Skill References, Constraints, Delegation Prompt Template, Failure Modes, Inputs, Outputs, Position in the Workflow, Purpose (+8 more)
+Cohesion: 0.11
+Nodes (21): Additional Skill References, Code-First, Constraints, Delegation Prompt Template, Failure Modes, Inputs, Note for Code-First and Test-First, Outputs (+13 more)
 
-### Community 35 - "PosteriorEncoder"
+### Community 35 - "SynthesizerTrnMs256NSFsid"
 Cohesion: 0.12
-Nodes (4): Generator, GeneratorNSF, PosteriorEncoder, ResidualCouplingBlock
+Nodes (6): PosteriorEncoder, ResidualCouplingBlock, SynthesizerTrnMs256NSFsid, SynthesizerTrnMs256NSFsid_nono, SynthesizerTrnMs768NSFsid, SynthesizerTrnMs768NSFsid_nono
 
 ### Community 37 - "evaluate"
 Cohesion: 0.29
 Nodes (20): evaluate(), _by_name(), _facts(), _ready_models(), test_applio_can_be_installed_when_git_and_python_are_there(), test_applio_install_needs_git_and_python_first(), test_cuda_shows_the_card_name(), test_cuda_shows_whether_fp16_is_used() (+12 more)
 
+### Community 39 - "party-mode/SKILL.md"
+Cohesion: 0.22
+Nodes (4): DRY — Don't Repeat Yourself, DRY Rules, Separation of Concerns, SoC Rules
+
 ### Community 40 - "changer_controller.py"
-Cohesion: 0.14
-Nodes (22): _first_start_settings(), apply_preset(), load_settings(), matching_preset(), _preset(), save_settings(), Settings, settings_path() (+14 more)
+Cohesion: 0.12
+Nodes (23): Functional Requirements, _first_start_settings(), apply_preset(), load_settings(), _preset(), save_settings(), Settings, settings_path() (+15 more)
 
 ### Community 41 - "onboarding/SKILL.md"
 Cohesion: 0.18
@@ -341,21 +347,25 @@ Nodes (7): Step 2 — Coding Conventions, Step 3 — Finish, How to Use This Ski
 Cohesion: 0.50
 Nodes (7): main(), report(), scan_diff(), scan_files(), scan_line(), severity_color(), scan-secrets.sh script
 
+### Community 43 - "SineGen"
+Cohesion: 0.16
+Nodes (3): GeneratorNSF, SineGen, SourceModuleHnNSF
+
 ### Community 44 - "Claude Hook Settings"
 Cohesion: 0.50
 Nodes (3): hooks, PreToolUse, $schema
 
 ### Community 45 - "WN"
-Cohesion: 0.18
-Nodes (3): ResBlock2, ResidualCouplingLayer, WN
+Cohesion: 0.15
+Nodes (4): ResBlock1, ResBlock2, ResidualCouplingLayer, WN
 
 ### Community 46 - "SetupController"
 Cohesion: 0.14
 Nodes (20): SetupController, FakeApplio, test_begin_install_clears_old_events(), test_busy_follows_set_busy(), test_busy_message_clears_after_end_calls(), test_busy_message_prefers_install_then_download_then_measure(), test_busy_message_while_downloading(), test_busy_message_while_installing() (+12 more)
 
-### Community 47 - ".__init__"
-Cohesion: 0.22
-Nodes (4): ContentEncoder, _default_device(), PitchExtractor, _StageClock
+### Community 47 - "Phase 5 — Generate Docs"
+Cohesion: 0.25
+Nodes (7): After writing, File path, Overview file, Overview template, Phase 5 — Generate Docs, Rules, Story doc template
 
 ### Community 49 - "DiscriminatorP"
 Cohesion: 0.18
@@ -365,9 +375,9 @@ Nodes (4): DiscriminatorP, DiscriminatorS, MultiPeriodDiscriminator, MultiPeriod
 Cohesion: 0.23
 Nodes (6): ConvFlow, DDSConv, piecewise_rational_quadratic_transform(), rational_quadratic_spline(), searchsorted(), unconstrained_rational_quadratic_spline()
 
-### Community 52 - "discover_profiles"
+### Community 52 - "VoiceProfile"
 Cohesion: 0.16
-Nodes (10): VoiceEngine, _build_profile(), discover_profiles(), VoiceProfile, _make_voice(), test_discovers_profiles_sorted_by_name_with_index(), test_folder_without_pth_is_skipped(), test_loose_files_in_voices_folder_are_ignored() (+2 more)
+Nodes (11): Task List, VoiceEngine, _build_profile(), discover_profiles(), VoiceProfile, _make_voice(), test_discovers_profiles_sorted_by_name_with_index(), test_folder_without_pth_is_skipped() (+3 more)
 
 ### Community 53 - "Developer"
 Cohesion: 0.18
@@ -426,7 +436,7 @@ Cohesion: 0.22
 Nodes (9): Cargo, Go Modules, Maven / Gradle, npm, pip, Reporting Format, RubyGems, Triage Rules (+1 more)
 
 ### Community 67 - "MonkeyPatch"
-Cohesion: 0.10
+Cohesion: 0.11
 Nodes (18): applio(), bench_env(), __init__(), bench_run(), fake_run(), controller(), test_bench_passes_the_seconds_to_run_bench(), test_download_passes_progress_to_ensure_base_models_and_returns_none() (+10 more)
 
 ### Community 68 - "Code Review Checklist"
@@ -458,8 +468,8 @@ Cohesion: 0.25
 Nodes (7): D — Dependency Inversion Principle, I — Interface Segregation Principle, L — Liskov Substitution Principle, O — Open/Closed Principle, S — Single Responsibility Principle, SOLID, SOLID Rules
 
 ### Community 76 - "SetupReport"
-Cohesion: 0.19
-Nodes (19): _models_check(), SetupReport, check(), make_facts(), test_can_measure_when_models_are_present_and_a_voice_exists(), test_cannot_measure_when_models_are_missing(), test_cannot_measure_when_the_check_failed(), test_cannot_measure_without_voices() (+11 more)
+Cohesion: 0.18
+Nodes (20): _missing(), _models_check(), SetupReport, check(), make_facts(), test_can_measure_when_models_are_present_and_a_voice_exists(), test_cannot_measure_when_models_are_missing(), test_cannot_measure_when_the_check_failed() (+12 more)
 
 ### Community 77 - "test_setup_controller.py"
 Cohesion: 0.15
@@ -618,12 +628,12 @@ Cohesion: 0.50
 Nodes (4): Approved, Cancels, Requests Changes, Step 4 — Approval Gate
 
 ### Community 118 - "setup_check.py"
-Cohesion: 0.19
-Nodes (21): Functional Requirements, config_dir(), log_dir(), models_dir(), training_dir(), voices_dir(), _applio(), _audio() (+13 more)
+Cohesion: 0.37
+Nodes (13): _applio(), _audio(), Check, _compute(), Facts, _is_virtual_device(), _is_virtual_output(), _models() (+5 more)
 
-### Community 120 - "EngineStub"
-Cohesion: 0.22
-Nodes (7): EngineStub, test_change_pitch_does_not_touch_engine_when_not_converting(), test_levels_are_zero_after_stop_even_if_pipeline_reports_while_stopping(), test_start_pipeline_loads_same_voice_only_once(), test_start_pipeline_warms_up_then_starts(), test_start_succeeded_sets_converting_and_running_status(), test_stop_stops_pipeline_and_returns_ready()
+### Community 120 - "conftest.py"
+Cohesion: 0.60
+Nodes (3): fake_engine(), input_device(), output_device()
 
 ### Community 121 - "S2 — Voice changer controller"
 Cohesion: 0.25
@@ -633,28 +643,28 @@ Nodes (8): Acceptance Criteria, Estimate, Goal, Non-Functional Requirements, Out
 Cohesion: 0.67
 Nodes (3): Add a voice you already have, Keep your voice in a GitHub Release, Voice files
 
-### Community 123 - "train_panel_widget.py"
-Cohesion: 0.30
-Nodes (9): DatasetInfo, epochs_done(), find_latest_weights(), _has_checkpoint(), import_trained_model(), train_voice(), TrainOptions, validate_options() (+1 more)
+### Community 123 - "train_controller.py"
+Cohesion: 0.13
+Nodes (18): Approach Summary / Goal, Files in Scope, Functional Requirements, Open Questions / Blockers, Risks & Assumptions, Status, Task List, Title: Plan — S4 Train controller (+10 more)
 
-### Community 124 - "test_setup_screen.py"
-Cohesion: 0.17
-Nodes (11): _applio_line(), environment(), facts(), fake_applio(), FakeApplio, _lines(), test_install_applio_shows_its_output_and_then_checks_again(), body() (+3 more)
+### Community 124 - "environment"
+Cohesion: 0.50
+Nodes (3): environment(), facts(), fake_applio()
 
 ### Community 125 - "ChangerController"
-Cohesion: 0.07
-Nodes (7): Functional Requirements, ChangerController, LiveState, StartRequest, test_begin_start_without_voice_warns_no_voices(), test_initial_status_without_voices_is_no_voices_warning(), test_nothing_is_saved_before_load()
+Cohesion: 0.06
+Nodes (7): ChangerController, LiveState, StartRequest, matching_preset(), test_begin_start_without_voice_warns_no_voices(), test_initial_status_without_voices_is_no_voices_warning(), test_nothing_is_saved_before_load()
 
-### Community 133 - "start_running"
+### Community 132 - "FakeTimer"
 Cohesion: 0.29
-Nodes (7): start_running(), test_change_pitch_updates_running_engine(), test_pipeline_receives_store_callbacks(), test_slow_warning_repeats_in_a_new_run(), test_tick_has_no_status_when_fast(), test_tick_slow_warning_mentions_dropped_blocks(), test_tick_warns_slow_with_percent_once_per_run()
+Nodes (3): FakeTimer, TimerLog, timers()
 
-### Community 134 - "loaded"
-Cohesion: 0.33
-Nodes (5): env(), loaded(), make_voice(), test_initial_status_without_virtual_device_is_warning(), timers()
+### Community 134 - ".load"
+Cohesion: 0.29
+Nodes (6): env(), loaded(), make_voice(), test_first_start_on_cpu_without_saved_settings_uses_minimal_preset(), test_initial_status_without_virtual_device_is_warning(), test_load_without_voices_leaves_voice_unset()
 
 ### Community 135 - "HomeScreen"
-Cohesion: 0.17
+Cohesion: 0.25
 Nodes (3): Main parts (`src/voice_clone/`), HomeScreen, TrainScreen
 
 ### Community 136 - "step-6-test-report.md"
@@ -666,40 +676,32 @@ Cohesion: 0.18
 Nodes (10): Acceptance Criteria, Estimate, Functional Requirements, Goal, Non-Functional Requirements, Out of Scope, Requirements, S5 — App shell asks controllers about running work (+2 more)
 
 ### Community 141 - "VoiceCloneApp"
-Cohesion: 0.23
+Cohesion: 0.21
 Nodes (12): VoiceCloneApp, test_r_key_exits_with_restart(), scenario(), open_voice_changer(), scenario(), test_no_voices_shows_status_message(), scenario(), scenario() (+4 more)
 
-### Community 143 - "VoiceCloneError"
-Cohesion: 0.18
-Nodes (6): VoiceCloneError, _parse_paths(), _read_int(), failing(), failing(), test_parse_paths_keeps_an_existing_path_with_spaces_whole()
-
-### Community 144 - "Title: Plan — S3 Setup controller"
-Cohesion: 0.22
-Nodes (9): Approach Summary / Goal, Files in Scope, Non-Functional Requirements, Open Questions / Blockers, Risks & Assumptions, Status, Title: Plan — S3 Setup controller, _measure_message() (+1 more)
-
-### Community 146 - "Testing Workflow"
-Cohesion: 0.40
-Nodes (5): Code-First, Note for Code-First and Test-First, Skip-Testing, Test-First, Testing Workflow
+### Community 144 - "setup_controller.py"
+Cohesion: 0.26
+Nodes (7): Functional Requirements, Risks & Assumptions, _measure_message(), _preset_title(), models_dir(), _compute_device(), gather_facts()
 
 ## Knowledge Gaps
 - **1 isolated node(s):** `voice-clone`
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 717 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **31 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 732 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **26 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `Main parts (`src/voice_clone/`)` connect `HomeScreen` to `ConversionPipeline`, `MainScreen`, `SetupScreen`, `RingBuffer`, `changer_controller.py`, `numpy`, `SetupController`, `setup_controller.py`, `RvcEngine`, `Additional Information`, `ChangerController`?**
-  _High betweenness centrality (0.143) - this node is a cross-community bridge._
-- **Are the 74 inferred relationships involving `SetupController` (e.g. with `Main parts (`src/voice_clone/`)` and `Functional Requirements`) actually correct?**
-  _`SetupController` has 74 INFERRED edges - model-reasoned connections that need verification._
+- **Why does `Main parts (`src/voice_clone/`)` connect `HomeScreen` to `RvcEngine`, `ConversionPipeline`, `MainScreen`, `SetupScreen`, `changer_controller.py`, `SetupController`, `bench.py`, `Additional Information`, `TrainController`, `ChangerController`?**
+  _High betweenness centrality (0.180) - this node is a cross-community bridge._
+- **Are the 75 inferred relationships involving `SetupController` (e.g. with `Main parts (`src/voice_clone/`)` and `Functional Requirements`) actually correct?**
+  _`SetupController` has 75 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `voice-clone` to the rest of the system?**
   _1 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `ConversionPipeline` be split into smaller, more focused modules?**
-  _Cohesion score 0.09487179487179487 - nodes in this community are weakly interconnected._
-- **Why does `Coding Conventions` connect `Coding Conventions` to `onboarding/SKILL.md`, `ConversionPipeline`?**
-  _High betweenness centrality (0.131) - this node is a cross-community bridge._
+  _Cohesion score 0.06826506826506827 - nodes in this community are weakly interconnected._
+- **Why does `Additional Information` connect `Additional Information` to `HomeScreen`?**
+  _High betweenness centrality (0.158) - this node is a cross-community bridge._
 - **Are the 19 inferred relationships involving `ChangerController` (e.g. with `Main parts (`src/voice_clone/`)` and `Files in Scope`) actually correct?**
   _`ChangerController` has 19 INFERRED edges - model-reasoned connections that need verification._
 - **Should `test_pipeline.py` be split into smaller, more focused modules?**
-  _Cohesion score 0.06271186440677966 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.0783673469387755 - nodes in this community are weakly interconnected._

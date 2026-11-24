@@ -5,7 +5,6 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from voice_clone.domain.errors import VoiceCloneError
-from voice_clone.domain.paths import training_dir, voices_dir
 from voice_clone.logging_setup import setup_logging
 
 logger = logging.getLogger(__name__)
@@ -155,7 +154,8 @@ def _run_bench_command(args: argparse.Namespace) -> int:
 
 
 def _run_train(args: argparse.Namespace) -> int:
-    from voice_clone.domain.training import Applio, TrainOptions, train_voice
+    from voice_clone.controllers.train_controller import TrainController
+    from voice_clone.domain.training import TrainOptions
 
     console = logging.StreamHandler(sys.stdout)
     console.setFormatter(logging.Formatter("%(message)s"))
@@ -172,9 +172,8 @@ def _run_train(args: argparse.Namespace) -> int:
         restart=args.restart,
         force=args.force,
     )
-    root = training_dir()
     try:
-        train_voice(options, Applio(root / ".applio"), root, voices_dir())
+        TrainController().train_cli(options)
     except VoiceCloneError as exc:
         logger.error("Error: %s", exc)
         return EXIT_ERROR
