@@ -5,8 +5,8 @@ from pathlib import Path
 import pytest
 from textual.widgets import Button, Checkbox, Input, ProgressBar
 
+import voice_clone.controllers.changer_controller as changer_controller
 import voice_clone.domain.config as config
-import voice_clone.views.main_screen as main_screen
 import voice_clone.views.train_panel_widget as train_panel
 from voice_clone.domain.audio import AudioDevice
 from voice_clone.domain.errors import TrainingError, TrainingStoppedError
@@ -24,10 +24,10 @@ def environment(tmp_path, monkeypatch) -> Path:
     voices.mkdir()
     (tmp_path / "rec.m4a").write_bytes(b"x")
     monkeypatch.setattr(config, "settings_path", lambda: tmp_path / "settings.toml")
-    monkeypatch.setattr(main_screen, "voices_dir", lambda: voices)
-    monkeypatch.setattr(main_screen, "list_input_devices", lambda: [MIC])
-    monkeypatch.setattr(main_screen, "list_output_devices", lambda: [BLACKHOLE])
-    monkeypatch.setattr(main_screen, "base_models_present", lambda _: True)
+    monkeypatch.setattr(changer_controller, "voices_dir", lambda: voices)
+    monkeypatch.setattr(changer_controller, "list_input_devices", lambda: [MIC])
+    monkeypatch.setattr(changer_controller, "list_output_devices", lambda: [BLACKHOLE])
+    monkeypatch.setattr(changer_controller, "base_models_present", lambda _: True)
     monkeypatch.setattr(train_panel, "voices_dir", lambda: voices)
     monkeypatch.setattr(train_panel, "training_dir", lambda: tmp_path / "training")
     return tmp_path

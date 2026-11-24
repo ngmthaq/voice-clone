@@ -3,9 +3,12 @@ import asyncio
 import pytest
 import torch
 
+import voice_clone.controllers.changer_controller as changer_controller
 import voice_clone.domain.config as config
 import voice_clone.views.main_screen as main_screen
+from voice_clone.controllers.changer_controller import StartRequest
 from voice_clone.domain.audio import AudioDevice
+from voice_clone.domain.profiles import VoiceProfile
 from voice_clone.views.app import VoiceCloneApp
 
 MIC = AudioDevice(0, "Mic", 1, 0, 48000.0)
@@ -22,10 +25,11 @@ async def open_voice_changer(app, pilot) -> None:
 def empty_environment(tmp_path, monkeypatch):
     (tmp_path / "voices").mkdir()
     monkeypatch.setattr(config, "settings_path", lambda: tmp_path / "settings.toml")
-    monkeypatch.setattr(main_screen, "voices_dir", lambda: tmp_path / "voices")
-    monkeypatch.setattr(main_screen, "list_input_devices", lambda: [MIC])
-    monkeypatch.setattr(main_screen, "list_output_devices", lambda: [BLACKHOLE])
-    monkeypatch.setattr(main_screen, "select_torch_device", lambda: torch.device("mps"))
+    monkeypatch.setattr(changer_controller, "voices_dir", lambda: tmp_path / "voices")
+    monkeypatch.setattr(changer_controller, "list_input_devices", lambda: [MIC])
+    monkeypatch.setattr(changer_controller, "list_output_devices", lambda: [BLACKHOLE])
+    monkeypatch.setattr(changer_controller, "select_torch_device", lambda: torch.device("mps"))
+    monkeypatch.setattr(changer_controller, "base_models_present", lambda _: True)
 
 
 def test_no_voices_shows_status_message(empty_environment):
@@ -37,7 +41,7 @@ def test_no_voices_shows_status_message(empty_environment):
 
     status = asyncio.run(scenario())
 
-    assert main_screen.NO_VOICES_MESSAGE in status
+    assert changer_controller.NO_VOICES_MESSAGE in status
 
 
 def test_q_key_quits_app(empty_environment):
@@ -141,7 +145,7 @@ def test_index_percent_change_applies_to_running_engine(empty_environment):
 
     async def body(app, pilot):
         engine = FakeEngine()
-        app.screen._engine = engine
+        app.screen._controller._engine = engine
         app.screen.query_one("#index-percent").value = "80"
         await pilot.pause()
         return engine.index_rate
@@ -180,14 +184,14 @@ def test_voice_match_changes_apply_to_running_engine_and_pipeline(empty_environm
 
     async def body(app, pilot):
         engine, pipeline = FakeEngine(), FakePipeline()
-        app.screen._engine = engine
-        app.screen._pipeline = pipeline
+        app.screen._controller._engine = engine
+        app.screen._controller._pipeline = pipeline
         app.screen.query_one("#protect-percent").value = "50"
         app.screen.query_one("#loudness-percent").value = "100"
         app.screen.query_one("#pitch-smoothing").value = "40"
         app.screen.query_one("#context-ms").value = "1500"
         await pilot.pause()
-        app.screen._pipeline = None
+        app.screen._controller._pipeline = None
         return (
             engine.protect,
             engine.loudness_follow,
@@ -282,13 +286,13 @@ def test_advanced_tab_holds_voice_match_and_gate(empty_environment):
 def test_all_settings_are_disabled_while_running(empty_environment):
     async def body(app, pilot):
         screen = app.screen
-        screen._converting = True
+        screen._controller._converting = True
         screen._refresh_controls()
         await pilot.pause()
         settings = list(screen.query("#tabs Select, #tabs Input, #tabs Button"))
         locked = all(widget.disabled for widget in settings)
         stop_enabled = not screen.query_one("#start-button").disabled
-        screen._converting = False
+        screen._controller._converting = False
         screen._refresh_controls()
         await pilot.pause()
         unlocked = not any(widget.disabled for widget in settings)
@@ -306,12 +310,12 @@ def test_slow_conversion_shows_warning(empty_environment):
             pass
 
     async def body(app, pilot):
-        app.screen._pipeline = SlowPipeline()
-        app.screen._converting = True
+        app.screen._controller._pipeline = SlowPipeline()
+        app.screen._controller._converting = True
         await pilot.pause(0.3)
         status = str(app.screen.query_one("#status").render())
-        app.screen._converting = False
-        app.screen._pipeline = None
+        app.screen._controller._converting = False
+        app.screen._controller._pipeline = None
         return status
 
     status = _run(body)
@@ -432,16 +436,18 @@ def test_pipeline_started_after_the_screen_closed_is_stopped(empty_environment, 
         async with app.run_test(size=(100, 50)) as pilot:
             await open_voice_changer(app, pilot)
             screen = app.screen
-            screen._engine = FakeEngine()
+            screen._controller._engine = FakeEngine()
             app.pop_screen()
             await pilot.pause()
             return screen
 
     screen = asyncio.run(scenario())
-    monkeypatch.setattr(main_screen, "ConversionPipeline", FakePipeline)
-    profile = main_screen.VoiceProfile("v", None, None)
+    monkeypatch.setattr(changer_controller, "ConversionPipeline", FakePipeline)
+    profile = VoiceProfile("v", None, None)
 
-    main_screen.MainScreen._start_pipeline.__wrapped__(screen, MIC, BLACKHOLE, profile, 0)
+    main_screen.MainScreen._start_pipeline.__wrapped__(
+        screen, StartRequest(MIC, BLACKHOLE, profile, 0)
+    )
 
     assert stopped == [True]
 
@@ -457,13 +463,13 @@ def test_stop_resets_the_level_meters(empty_environment):
             self._screen = screen
 
         def stop(self) -> None:
-            self._screen._store_levels(0.2, 0.2)
+            self._screen._controller._store_levels(0.2, 0.2)
 
     async def body(app, pilot):
         screen = app.screen
-        screen._pipeline = FinishingPipeline(screen)
-        screen._converting = True
-        screen._store_levels(0.2, 0.2)
+        screen._controller._pipeline = FinishingPipeline(screen)
+        screen._controller._converting = True
+        screen._controller._store_levels(0.2, 0.2)
         await pilot.pause(0.3)
         while_running = (
             screen.query_one("#input-meter").level,
@@ -481,7 +487,7 @@ def test_stop_resets_the_level_meters(empty_environment):
 
 
 def test_fresh_cpu_only_install_starts_on_minimal(empty_environment, monkeypatch):
-    monkeypatch.setattr(main_screen, "select_torch_device", lambda: torch.device("cpu"))
+    monkeypatch.setattr(changer_controller, "select_torch_device", lambda: torch.device("cpu"))
 
     async def body(app, pilot):
         return app.screen.query_one("#preset-select").value
@@ -491,7 +497,7 @@ def test_fresh_cpu_only_install_starts_on_minimal(empty_environment, monkeypatch
 
 def test_saved_settings_win_over_the_cpu_default(empty_environment, monkeypatch, tmp_path):
     (tmp_path / "settings.toml").write_text("block_ms = 400\n")
-    monkeypatch.setattr(main_screen, "select_torch_device", lambda: torch.device("cpu"))
+    monkeypatch.setattr(changer_controller, "select_torch_device", lambda: torch.device("cpu"))
 
     async def body(app, pilot):
         return app.screen.query_one("#preset-select").value

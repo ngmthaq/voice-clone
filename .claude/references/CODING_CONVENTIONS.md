@@ -10,7 +10,7 @@ voice-clone/
 │   ├── __main__.py, cli.py # commands: run, train, bench
 │   ├── logging_setup.py
 │   ├── views/              # Textual app.py, screens, widgets, app.tcss
-│   ├── controllers/        # glue between views and domain
+│   ├── controllers/        # screen logic, no Textual code
 │   └── domain/             # no UI code
 │       ├── config.py       # Settings (pydantic) + presets
 │       ├── errors.py, paths.py, setup_check.py, bench.py
@@ -50,6 +50,17 @@ voice-clone/
 
 - Write almost no comments. Use clear names instead.
 - Add a short docstring only when the reason for the code is not clear from the code.
+
+## Controllers
+
+- A controller holds the state and rules of one screen. It sits between a view and `domain/`.
+- A controller never imports Textual. Plain pytest tests must be able to run it.
+- The view builds widgets, sends user actions to the controller, and shows what the controller says.
+- The view owns threads and timers. It runs blocking controller methods in its own `@work` workers and passes `self.set_timer` to the controller when it needs a delay.
+- State changes made after a worker ends run on the UI thread (`call_from_thread`).
+- The controller imports domain names at module level and calls them by bare name, so tests can patch them on the controller module.
+- A controller gives a status as a `(message, kind)` pair. `kind` is `""`, `"warning"`, `"error"`, or `"running"`. The view only shows it.
+- Callbacks from the audio pipeline (`on_levels`, `on_error`) only store values.
 
 ## Real-Time Audio
 

@@ -35,12 +35,12 @@ As a `developer`, I want to `have the voice changer logic in a controller` so th
 
 ## Acceptance Criteria
 
-- [ ] Given `controllers/changer_controller.py`, when a test creates it with a `FakeEngine` and fake devices, then it can start and stop the pipeline with no Textual app.
-- [ ] Given a setting change, when the controller saves it, then it uses the same debounced save as today and the TOML file is the same.
-- [ ] Given voices in `voices/`, when the controller loads them, then the voice list matches today's list.
-- [ ] Given `MainScreen`, when I read it, then it only builds widgets, sends user actions to the controller, and shows controller state. It has no direct calls to `domain/`.
-- [ ] Given the audio callback, when the pipeline runs, then the controller adds no model calls, logs, or locks to it.
-- [ ] Given the app, when I use the voice changer screen, then it works exactly as before.
+- [x] Given `controllers/changer_controller.py`, when a test creates it with a `FakeEngine` and fake devices, then it can start and stop the pipeline with no Textual app.
+- [x] Given a setting change, when the controller saves it, then it uses the same debounced save as today and the TOML file is the same.
+- [x] Given voices in `voices/`, when the controller loads them, then the voice list matches today's list.
+- [x] Given `MainScreen`, when I read it, then it only builds widgets, sends user actions to the controller, and shows controller state. It has no direct calls to `domain/`.
+- [x] Given the audio callback, when the pipeline runs, then the controller adds no model calls, logs, or locks to it.
+- [x] Given the app, when I use the voice changer screen, then it works exactly as before.
 
 ## Tasks
 

@@ -36,7 +36,7 @@
 | --- | --- |
 | `cli.py`, `__main__.py` | Commands: `run`, `train`, `bench` |
 | `views/` | Textual `app.py`, screens (`HomeScreen`, `MainScreen`, `SetupScreen`, `TrainScreen`), widgets, `app.tcss` |
-| `controllers/` | Glue between views and domain (empty for now) |
+| `controllers/` | Screen logic with no Textual code. `ChangerController` runs the voice changer. Views only show its state |
 | `domain/audio/` | Device list, `ConversionPipeline`, `NoiseGate`, `RingBuffer` |
 | `domain/engine/` | `RvcEngine`, torch device choice, base model download. `domain/engine/vendor/` is copied RVC code (not linted) |
 | `domain/profiles/` | Find voices in `voices/` |
