@@ -7,14 +7,17 @@ voice-clone/
 ├── pyproject.toml          # hatchling build, ruff + pytest config
 ├── src/voice_clone/
 │   ├── __main__.py, cli.py # commands: run, train, bench
-│   ├── app.py              # Textual App
-│   ├── config.py           # Settings (pydantic) + presets
-│   ├── errors.py, paths.py, logging_setup.py, setup_check.py, bench.py
-│   ├── ui/                 # screens, widgets, app.tcss
-│   ├── audio/              # devices, pipeline, noise gate, ring buffer
-│   ├── engine/             # RVC engine, torch device, downloads; vendor/ = copied RVC code
-│   ├── profiles/           # find voices
-│   └── training/           # Applio setup, dataset, trainer
+│   ├── __main__.py, cli.py # commands: run, train, bench
+│   ├── logging_setup.py
+│   ├── views/              # Textual app.py, screens, widgets, app.tcss
+│   ├── controllers/        # glue between views and domain
+│   └── domain/             # no UI code
+│       ├── config.py       # Settings (pydantic) + presets
+│       ├── errors.py, paths.py, setup_check.py, bench.py
+│       ├── audio/          # devices, pipeline, noise gate, ring buffer
+│       ├── engine/         # RVC engine, torch device, downloads; vendor/ = copied RVC code
+│       ├── profiles/       # find voices
+│       └── training/       # Applio setup, dataset, trainer
 ├── tests/                  # same folders as src/, conftest.py has shared fakes
 ├── docs/                   # user guides
 ├── plans/                  # plan files
@@ -24,9 +27,9 @@ voice-clone/
 ## Style
 
 - Use Ruff to lint (`E, F, I, UP, B`) and format. Line length 100, double quotes, 4 spaces, target Python 3.12.
-- `src/voice_clone/engine/vendor/` and `training/` are not linted. Do not restyle vendor code.
+- `src/voice_clone/domain/engine/vendor/` and `training/` are not linted. Do not restyle vendor code.
 - Add type hints to every function signature. Use modern syntax: `str | None`, `list[int]`, `collections.abc.Callable`.
-- Use absolute imports: `from voice_clone.audio import ...`. Sub-packages export their public names in `__init__.py`.
+- Use absolute imports: `from voice_clone.domain.audio import ...`. Sub-packages export their public names in `__init__.py`.
 
 ## Naming
 

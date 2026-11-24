@@ -2,7 +2,7 @@ import logging
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
-from voice_clone.paths import log_dir
+from voice_clone.domain.paths import log_dir
 
 LOG_FILE_NAME = "voice-clone.log"
 MAX_LOG_BYTES = 1_000_000

@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from voice_clone.audio.devices import AudioDevice
+from voice_clone.domain.audio.devices import AudioDevice
 
 
 class FakeEngine:

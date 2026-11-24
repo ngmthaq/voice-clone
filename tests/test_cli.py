@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 
 from voice_clone import cli
-from voice_clone.errors import TrainingError
+from voice_clone.domain.errors import TrainingError
 
 
 @pytest.fixture(autouse=True)
@@ -17,7 +17,7 @@ def test_train_passes_options(monkeypatch: pytest.MonkeyPatch) -> None:
     def fake_train(options, applio, training_root, voices_root):
         seen["options"] = options
 
-    monkeypatch.setattr("voice_clone.training.train_voice", fake_train)
+    monkeypatch.setattr("voice_clone.domain.training.train_voice", fake_train)
 
     code = cli.main(["train", "a.m4a", "b.m4a", "--name", "me", "--epochs", "50"])
 
@@ -31,7 +31,7 @@ def test_train_error_returns_exit_code_1(monkeypatch: pytest.MonkeyPatch) -> Non
     def fake_train(*_: object) -> None:
         raise TrainingError("boom")
 
-    monkeypatch.setattr("voice_clone.training.train_voice", fake_train)
+    monkeypatch.setattr("voice_clone.domain.training.train_voice", fake_train)
 
     assert cli.main(["train", "a.m4a"]) == cli.EXIT_ERROR
 
@@ -40,7 +40,7 @@ def test_train_ctrl_c_returns_exit_code_130(monkeypatch: pytest.MonkeyPatch) -> 
     def fake_train(*_: object) -> None:
         raise KeyboardInterrupt
 
-    monkeypatch.setattr("voice_clone.training.train_voice", fake_train)
+    monkeypatch.setattr("voice_clone.domain.training.train_voice", fake_train)
 
     assert cli.main(["train", "a.m4a"]) == cli.EXIT_INTERRUPTED
 
@@ -58,14 +58,14 @@ def test_run_and_no_command_open_the_app(monkeypatch: pytest.MonkeyPatch, argv) 
         def run(self) -> None:
             opened.append(True)
 
-    monkeypatch.setattr("voice_clone.app.VoiceCloneApp", FakeApp)
+    monkeypatch.setattr("voice_clone.views.app.VoiceCloneApp", FakeApp)
 
     assert cli.main(argv) == 0
     assert opened == [True]
 
 
 def test_restart_runs_the_app_again_and_rescans_devices(monkeypatch: pytest.MonkeyPatch) -> None:
-    import voice_clone.app as app_module
+    import voice_clone.views.app as app_module
 
     results = iter([app_module.RESTART, app_module.RESTART, None])
     runs = []
@@ -77,7 +77,7 @@ def test_restart_runs_the_app_again_and_rescans_devices(monkeypatch: pytest.Monk
             return next(results)
 
     monkeypatch.setattr(app_module, "VoiceCloneApp", FakeApp)
-    monkeypatch.setattr("voice_clone.audio.rescan_devices", lambda: rescans.append(True))
+    monkeypatch.setattr("voice_clone.domain.audio.rescan_devices", lambda: rescans.append(True))
 
     assert cli.main(["run"]) == 0
     assert len(runs) == 3
@@ -87,7 +87,7 @@ def test_restart_runs_the_app_again_and_rescans_devices(monkeypatch: pytest.Monk
 def test_r_key_exits_with_restart() -> None:
     import asyncio
 
-    from voice_clone.app import RESTART, VoiceCloneApp
+    from voice_clone.views.app import RESTART, VoiceCloneApp
 
     async def scenario():
         app = VoiceCloneApp()
@@ -101,8 +101,8 @@ def test_r_key_exits_with_restart() -> None:
 
 
 def test_bench_without_base_models_returns_error(monkeypatch: pytest.MonkeyPatch, tmp_path) -> None:
-    monkeypatch.setattr("voice_clone.paths.models_dir", lambda: tmp_path)
-    monkeypatch.setattr("voice_clone.engine.base_models_present", lambda path: False)
+    monkeypatch.setattr("voice_clone.domain.paths.models_dir", lambda: tmp_path)
+    monkeypatch.setattr("voice_clone.domain.engine.base_models_present", lambda path: False)
 
     assert cli.main(["bench", "--cpu"]) == cli.EXIT_ERROR
 

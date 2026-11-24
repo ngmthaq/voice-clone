@@ -4,7 +4,7 @@ voice-clone uses the following third-party code and models. Check each source fo
 
 ## RVC-Project (Retrieval-based Voice Conversion WebUI)
 
-Parts of the voice conversion code in `src/voice_clone/engine/vendor/` come from RVC-Project. It is released under the MIT License. The license text is in `src/voice_clone/engine/vendor/LICENSE`.
+Parts of the voice conversion code in `src/voice_clone/domain/engine/vendor/` come from RVC-Project. It is released under the MIT License. The license text is in `src/voice_clone/domain/engine/vendor/LICENSE`.
 
 Source: https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI
 

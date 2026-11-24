@@ -35,14 +35,15 @@
 | Folder / file | Job |
 | --- | --- |
 | `cli.py`, `__main__.py` | Commands: `run`, `train`, `bench` |
-| `app.py`, `ui/` | Textual app, screens (`HomeScreen`, `MainScreen`, `SetupScreen`, `TrainScreen`), widgets, `app.tcss` |
-| `audio/` | Device list, `ConversionPipeline`, `NoiseGate`, `RingBuffer` |
-| `engine/` | `RvcEngine`, torch device choice, base model download. `engine/vendor/` is copied RVC code (not linted) |
-| `profiles/` | Find voices in `voices/` |
-| `training/` | Applio setup (pinned to 3.7.1 by commit), dataset prep, training runner |
-| `config.py` | `Settings` (pydantic) and performance presets |
-| `setup_check.py` | "Check setup": finds missing parts, downloads base models |
-| `bench.py` | Speed test ("Measure speed") |
+| `views/` | Textual `app.py`, screens (`HomeScreen`, `MainScreen`, `SetupScreen`, `TrainScreen`), widgets, `app.tcss` |
+| `controllers/` | Glue between views and domain (empty for now) |
+| `domain/audio/` | Device list, `ConversionPipeline`, `NoiseGate`, `RingBuffer` |
+| `domain/engine/` | `RvcEngine`, torch device choice, base model download. `domain/engine/vendor/` is copied RVC code (not linted) |
+| `domain/profiles/` | Find voices in `voices/` |
+| `domain/training/` | Applio setup (pinned to 3.7.1 by commit), dataset prep, training runner |
+| `domain/config.py` | `Settings` (pydantic) and performance presets |
+| `domain/setup_check.py` | "Check setup": finds missing parts, downloads base models |
+| `domain/bench.py` | Speed test ("Measure speed") |
 
 ### Target platforms
 

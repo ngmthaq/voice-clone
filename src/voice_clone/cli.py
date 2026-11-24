@@ -4,9 +4,9 @@ import sys
 from collections.abc import Sequence
 from pathlib import Path
 
-from voice_clone.errors import VoiceCloneError
+from voice_clone.domain.errors import VoiceCloneError
+from voice_clone.domain.paths import training_dir, voices_dir
 from voice_clone.logging_setup import setup_logging
-from voice_clone.paths import training_dir, voices_dir
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +21,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         return _run_train(args)
     if args.command == "bench":
         return _run_bench_command(args)
-    from voice_clone.app import RESTART, VoiceCloneApp
+    from voice_clone.views.app import RESTART, VoiceCloneApp
 
     while VoiceCloneApp().run() == RESTART:
         logger.info("Restarting the app")
@@ -31,7 +31,7 @@ def main(argv: Sequence[str] | None = None) -> int:
 
 def _rescan_audio_devices() -> None:
     try:
-        from voice_clone.audio import rescan_devices
+        from voice_clone.domain.audio import rescan_devices
 
         rescan_devices()
     except Exception:
@@ -79,7 +79,7 @@ def _build_parser() -> argparse.ArgumentParser:
     train.add_argument(
         "--force", action="store_true", help="Replace an existing voice with the same name."
     )
-    from voice_clone.config import PERFORMANCE_PRESETS
+    from voice_clone.domain.config import PERFORMANCE_PRESETS
 
     bench = commands.add_parser(
         "bench",
@@ -115,12 +115,12 @@ def _build_parser() -> argparse.ArgumentParser:
 def _run_bench_command(args: argparse.Namespace) -> int:
     import torch
 
-    from voice_clone.bench import apply_engine_options, auto_presets, fits, run_bench
-    from voice_clone.config import PERFORMANCE_PRESETS, load_settings
-    from voice_clone.engine import RvcEngine, base_models_present, select_torch_device
-    from voice_clone.engine.download import base_model_paths
-    from voice_clone.paths import models_dir
-    from voice_clone.profiles.discovery import discover_profiles
+    from voice_clone.domain.bench import apply_engine_options, auto_presets, fits, run_bench
+    from voice_clone.domain.config import PERFORMANCE_PRESETS, load_settings
+    from voice_clone.domain.engine import RvcEngine, base_models_present, select_torch_device
+    from voice_clone.domain.engine.download import base_model_paths
+    from voice_clone.domain.paths import models_dir
+    from voice_clone.domain.profiles.discovery import discover_profiles
 
     settings = load_settings()
     if not base_models_present(models_dir()):
@@ -177,7 +177,7 @@ def _run_bench_command(args: argparse.Namespace) -> int:
 
 
 def _run_train(args: argparse.Namespace) -> int:
-    from voice_clone.training import Applio, TrainOptions, train_voice
+    from voice_clone.domain.training import Applio, TrainOptions, train_voice
 
     console = logging.StreamHandler(sys.stdout)
     console.setFormatter(logging.Formatter("%(message)s"))

@@ -42,7 +42,7 @@ packages = ["src/voice_clone"]
 line-length = 100
 target-version = "py312"
 src = ["src", "tests"]
-extend-exclude = ["src/voice_clone/engine/vendor", "training"]
+extend-exclude = ["src/voice_clone/domain/engine/vendor", "training"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
