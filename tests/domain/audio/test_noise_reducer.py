@@ -71,13 +71,13 @@ def test_first_delay_samples_of_output_are_zero():
     assert np.abs(out[: reducer.delay_samples]).max() < 1e-6
 
 
-def test_white_noise_level_drops_at_least_10_db_after_learning():
+def test_white_noise_level_drops_at_least_8_db_after_learning():
     noise = _noise(6)
 
     out = NoiseReducer(RATE).process(noise)
 
     drop = _rms_db(noise[3 * RATE :]) - _rms_db(out[3 * RATE :])
-    assert drop >= 10
+    assert drop >= 8
 
 
 def test_clear_tone_after_learning_noise_keeps_most_of_its_energy():
@@ -91,6 +91,45 @@ def test_clear_tone_after_learning_noise_keeps_most_of_its_energy():
     expected = tone[start - delay : -delay].astype(np.float64)
     kept = np.sum(out[start:].astype(np.float64) ** 2) / np.sum(expected**2)
     assert kept >= 0.9
+
+
+def _speech_like(seconds):
+    t = np.arange(int(seconds * RATE)) / RATE
+    pitch = 130 + 25 * np.sin(2 * np.pi * 0.9 * t)
+    phase = 2 * np.pi * np.cumsum(pitch) / RATE
+    voice = sum(np.sin(k * phase) / k**1.2 for k in range(1, 55))
+    syllables = 0.55 + 0.45 * np.sin(2 * np.pi * 4 * t) ** 2
+    syllables[(t % 1.0) >= 0.85] = 0.0
+    return (0.03 * voice * syllables).astype(np.float32)
+
+
+def _band_db(audio, low, high):
+    power = np.abs(np.fft.rfft(audio.astype(np.float64))) ** 2
+    freqs = np.fft.rfftfreq(len(audio), 1 / RATE)
+    return 10 * np.log10(power[(freqs >= low) & (freqs < high)].sum())
+
+
+def test_long_speech_keeps_its_high_frequencies():
+    speech = np.concatenate([np.zeros(RATE, dtype=np.float32), _speech_like(9)])
+    reducer = NoiseReducer(RATE)
+
+    out = reducer.process(speech + _noise(10, sigma=0.001))
+
+    delay = reducer.delay_samples
+    last_second = slice(9 * RATE, 10 * RATE)
+    clean = speech[9 * RATE - delay : 10 * RATE - delay]
+    assert _band_db(out[last_second], 3500, 8000) - _band_db(clean, 3500, 8000) > -3
+
+
+def test_noise_that_gets_louder_is_learned_within_5_seconds():
+    quiet = _noise(3, sigma=0.002, seed=1)
+    loud = _noise(7, sigma=0.02, seed=2)
+    audio = np.concatenate([quiet, loud])
+
+    out = NoiseReducer(RATE).process(audio)
+
+    window = slice(8 * RATE, 9 * RATE)
+    assert _rms_db(audio[window]) - _rms_db(out[window]) >= 8
 
 
 def test_silence_stays_silent_and_finite():

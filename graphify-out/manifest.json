@@ -1050,21 +1050,27 @@
     "semantic_hash": ""
   },
   "src/voice_clone/domain/audio/noise_reducer.py": {
-    "mtime": 1795613943.9008663,
-    "seen": 1795614612.231968,
-    "ast_hash": "93f31a61a9285c72d53910db758519b2",
+    "mtime": 1795622154.8328638,
+    "seen": 1795622344.214211,
+    "ast_hash": "fd6f5f1dd554f0a7b35061ab6cf757ca",
     "semantic_hash": ""
   },
   "tests/domain/audio/test_noise_reducer.py": {
-    "mtime": 1795614109.074044,
-    "seen": 1795614612.2319958,
-    "ast_hash": "699aef92c982e0bcd8b0b083227f19ce",
+    "mtime": 1795622152.4228194,
+    "seen": 1795622344.21424,
+    "ast_hash": "71dfc283825e83d9ed64c8b5637c6e45",
     "semantic_hash": ""
   },
   "plans/2026-11-25-20-37-20-better-noise-filter.md": {
-    "mtime": 1795614609.8295543,
-    "seen": 1795614612.2320662,
-    "ast_hash": "4ea1a601b73298d2cd93ae84c7fe15c0",
+    "mtime": 1795621881.6938243,
+    "seen": 1795622344.21431,
+    "ast_hash": "df59539077160d8f1405ef427e5952d4",
+    "semantic_hash": ""
+  },
+  "plans/2026-11-25-22-50-19-noise-filter-learns-louder-noise.md": {
+    "mtime": 1795622341.9117577,
+    "seen": 1795622344.21431,
+    "ast_hash": "99bc36f492adec7df7f1f5608698b44b",
     "semantic_hash": ""
   }
 }

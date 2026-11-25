@@ -1,11 +1,18 @@
+from collections import deque
+
 import numpy as np
 
 FRAME_SIZE = 512
 HOP_SIZE = 256
-OVER_SUBTRACT = 4.0
-GAIN_FLOOR = 0.18
+OVER_SUBTRACT = 2.5
+GAIN_FLOOR = 0.22
 POWER_SMOOTHING = 0.15
 NOISE_RISE_PER_FRAME = 1.01
+SPEECH_RISE_PER_FRAME = 1.001
+SPEECH_POWER_RATIO = 4.0
+FLOOR_RISE_PER_FRAME = 1.05
+QUIET_WINDOW_FRAMES = 125
+FLOOR_RISE_RATIO = 2.0
 GAIN_UP_WEIGHT = 0.8
 GAIN_DOWN_WEIGHT = 0.4
 SILENCE_POWER = 1e-12
@@ -16,6 +23,8 @@ class NoiseReducer:
     """Removes steady background noise (crowd murmur, fan, hiss) with a spectral filter.
 
     It learns a noise level for each frequency and turns down the bins that sit close to it.
+    While a frame holds speech, the noise level rises only very slowly, so long speech is kept.
+    If even the quietest frame of the last ~2 s is far above it, the noise rises fast.
     Output is the input delayed by a fixed FRAME_SIZE samples, and has the same length.
     """
 
@@ -36,6 +45,7 @@ class NoiseReducer:
         self._noise: np.ndarray | None = None
         self._smooth_power = np.zeros(bins, dtype=np.float64)
         self._gain = np.ones(bins, dtype=np.float64)
+        self._recent_power: deque[float] = deque(maxlen=QUIET_WINDOW_FRAMES)
 
     def process(self, audio: np.ndarray) -> np.ndarray:
         audio = np.asarray(audio, dtype=np.float32)
@@ -74,7 +84,16 @@ class NoiseReducer:
             self._noise = power.copy()
             return
         self._smooth_power += POWER_SMOOTHING * (power - self._smooth_power)
-        rising = self._noise * NOISE_RISE_PER_FRAME
+        self._recent_power.append(float(power.sum()))
+        limit = SPEECH_POWER_RATIO * self._noise.sum()
+        history_full = len(self._recent_power) == QUIET_WINDOW_FRAMES
+        floor_rose = history_full and min(self._recent_power) > FLOOR_RISE_RATIO * self._noise.sum()
+        speech = self._smooth_power.sum() > limit
+        if floor_rose:
+            rate = FLOOR_RISE_PER_FRAME
+        else:
+            rate = SPEECH_RISE_PER_FRAME if speech else NOISE_RISE_PER_FRAME
+        rising = self._noise * rate
         self._noise = np.maximum(np.minimum(self._smooth_power, rising), EPSILON)
 
     def _smoothed_gain(self, power: np.ndarray) -> np.ndarray:
