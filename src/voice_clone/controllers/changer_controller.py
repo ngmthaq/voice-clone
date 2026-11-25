@@ -120,6 +120,7 @@ class ChangerController:
             pre_open_ms=self._settings.gate_pre_open_ms,
             open_above_floor_db=self._settings.gate_open_above_db,
             open_below_voice_db=self._settings.gate_open_below_voice_db,
+            block_bumps=self._settings.bump_filter,
         )
         self._noise_reduction = self._settings.noise_reduction
         self._models_ready = False
@@ -257,6 +258,13 @@ class ChangerController:
             self._pipeline.set_noise_reduction(on)
         self.schedule_save()
 
+    @property
+    def bump_filter(self) -> bool:
+        return self._gate.block_bumps
+
+    def set_bump_filter(self, on: bool) -> None:
+        self._apply_gate(replace(self._gate, block_bumps=on))
+
     def select_preset(self, key: str) -> bool:
         self.schedule_save()
         preset = PERFORMANCE_PRESETS.get(key)
@@ -265,7 +273,8 @@ class ChangerController:
         _, values = preset
         self._voice_options.update({name: int(values[name]) for name in self._voice_options})
         self._gate = GateSettings(
-            **{name: values[setting] for name, setting in GATE_SETTING_NAMES.items()}
+            block_bumps=self._gate.block_bumps,
+            **{name: values[setting] for name, setting in GATE_SETTING_NAMES.items()},
         )
         return True
 
@@ -274,7 +283,7 @@ class ChangerController:
         self._voice_options.update(
             {name: int(getattr(defaults, name)) for name in self._voice_options}
         )
-        self._apply_gate(GateSettings())
+        self._apply_gate(GateSettings(block_bumps=True))
         self.set_noise_reduction(True)
 
     def begin_download(self) -> None:
@@ -382,6 +391,7 @@ class ChangerController:
             gate_open_above_db=self._gate.open_above_floor_db,
             gate_open_below_voice_db=self._gate.open_below_voice_db,
             noise_reduction=self._noise_reduction,
+            bump_filter=self._gate.block_bumps,
         )
         if self._save_timer is not None:
             self._save_timer.stop()

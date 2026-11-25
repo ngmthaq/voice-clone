@@ -71,8 +71,9 @@ These are on the **Advanced** tab. They help when other people or noise are near
 | Above noise (dB) | 6 | How much louder than the background hiss your voice must be. Raise it if noise gets in. |
 | Below my voice (dB) | 20 | The app learns how loud your voice is. It opens only for sound within this many dB of it. Lower it if people near you get in. If your quiet words get cut, raise it. 0 turns it off. |
 | Noise filter | On | Removes steady background noise, like a fan, before the voice model. Turn it off if your voice sounds watery. |
+| Block bumps | On | Mutes short, loud, low thumps, like touching the mic or putting it on the table. Turn it off if loud low words get cut. |
 
-Picking a preset does not change the Noise filter. "Reset Advanced settings to defaults" turns it on.
+Picking a preset does not change the Noise filter or Block bumps. "Reset Advanced settings to defaults" turns both on.
 
 ## Speed and delay
 

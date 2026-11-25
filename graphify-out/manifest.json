@@ -84,9 +84,9 @@
     "semantic_hash": ""
   },
   "src/voice_clone/domain/audio/noise_gate.py": {
-    "mtime": 1795614516.5074592,
-    "seen": 1795614612.231967,
-    "ast_hash": "813efaadf7bfb5988d5f4075db4e739d",
+    "mtime": 1795623904.0169108,
+    "seen": 1795624187.447194,
+    "ast_hash": "1a91001f3197ccd5a70a23412e7701bc",
     "semantic_hash": ""
   },
   "src/voice_clone/domain/audio/pipeline.py": {
@@ -108,9 +108,9 @@
     "semantic_hash": ""
   },
   "src/voice_clone/domain/config.py": {
-    "mtime": 1795614516.5078137,
-    "seen": 1795614612.231971,
-    "ast_hash": "fb83f5621e701e11998970b56e7ec2d3",
+    "mtime": 1795623598.9804409,
+    "seen": 1795624187.447197,
+    "ast_hash": "47c597c0bbc545f5bab52636f20a1c4b",
     "semantic_hash": ""
   },
   "src/voice_clone/domain/engine/__init__.py": {
@@ -276,9 +276,9 @@
     "semantic_hash": ""
   },
   "src/voice_clone/views/main_screen.py": {
-    "mtime": 1795614516.5080004,
-    "seen": 1795614612.231988,
-    "ast_hash": "fe2e7e880618f5fdc4de1c3a149f8644",
+    "mtime": 1795623598.9823813,
+    "seen": 1795624187.4472141,
+    "ast_hash": "f4d79b6c8a4cedf88461631470b9d248",
     "semantic_hash": ""
   },
   "src/voice_clone/views/setup_screen.py": {
@@ -318,9 +318,9 @@
     "semantic_hash": ""
   },
   "tests/domain/audio/test_noise_gate.py": {
-    "mtime": 1795614516.5090077,
-    "seen": 1795614612.2319949,
-    "ast_hash": "b0fa6061398d6868ef1a6cc1dc42bffb",
+    "mtime": 1795623978.03747,
+    "seen": 1795624187.447222,
+    "ast_hash": "3ef7865d1c1f810928e07551185d4ace",
     "semantic_hash": ""
   },
   "tests/domain/audio/test_pipeline.py": {
@@ -378,9 +378,9 @@
     "semantic_hash": ""
   },
   "tests/domain/test_config.py": {
-    "mtime": 1795614516.509923,
-    "seen": 1795614612.232002,
-    "ast_hash": "413bfc86097d605d0dde778220645c5e",
+    "mtime": 1795623720.816674,
+    "seen": 1795624187.447228,
+    "ast_hash": "f218de9434a114c3e118b1fc369dec01",
     "semantic_hash": ""
   },
   "tests/domain/test_setup_check.py": {
@@ -426,9 +426,9 @@
     "semantic_hash": ""
   },
   "tests/views/test_main_screen.py": {
-    "mtime": 1795614516.510107,
-    "seen": 1795614612.232008,
-    "ast_hash": "a9f25ef7440788eefdddb197d27edb4c",
+    "mtime": 1795623720.8165426,
+    "seen": 1795624187.4472342,
+    "ast_hash": "f4b5529f7b85b952e81a6ecbf70c49f3",
     "semantic_hash": ""
   },
   "tests/views/test_setup_screen.py": {
@@ -912,9 +912,9 @@
     "semantic_hash": ""
   },
   "docs/USAGE.md": {
-    "mtime": 1795614516.5067227,
-    "seen": 1795614612.232058,
-    "ast_hash": "97a2e7d6de0b8e4644ee0313eb736e1f",
+    "mtime": 1795623598.9827769,
+    "seen": 1795624187.447284,
+    "ast_hash": "173f3073ac89e36fd42744f2fcd15f39",
     "semantic_hash": ""
   },
   "docs/VOICES.md": {
@@ -972,9 +972,9 @@
     "semantic_hash": ""
   },
   "src/voice_clone/controllers/changer_controller.py": {
-    "mtime": 1795614516.5071218,
-    "seen": 1795614612.231963,
-    "ast_hash": "6d3f5822b8fb9e41368771884dc47687",
+    "mtime": 1795623598.9817152,
+    "seen": 1795624187.44719,
+    "ast_hash": "491b45f5c822fd7518bdebfc9b1bff6e",
     "semantic_hash": ""
   },
   "tests/controllers/__init__.py": {
@@ -984,9 +984,9 @@
     "semantic_hash": ""
   },
   "tests/controllers/test_changer_controller.py": {
-    "mtime": 1795614516.5082147,
-    "seen": 1795614612.231992,
-    "ast_hash": "fb7f93cb1009e2526d866092dcb4d961",
+    "mtime": 1795623720.8163075,
+    "seen": 1795624187.447218,
+    "ast_hash": "d24b9e7f3b0c1682050b2a753bebc1db",
     "semantic_hash": ""
   },
   "plans/2026-11-24-09-07-30-s2-voice-changer-controller.md": {
@@ -1071,6 +1071,12 @@
     "mtime": 1795622341.9117577,
     "seen": 1795622344.21431,
     "ast_hash": "99bc36f492adec7df7f1f5608698b44b",
+    "semantic_hash": ""
+  },
+  "plans/2026-11-25-23-14-36-mute-mic-bumps.md": {
+    "mtime": 1795624184.8381138,
+    "seen": 1795624187.447294,
+    "ast_hash": "8fa36121c82f93b095021607d8d1ff6a",
     "semantic_hash": ""
   }
 }

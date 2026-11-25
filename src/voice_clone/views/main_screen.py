@@ -224,6 +224,12 @@ class MainScreen(Screen[None]):
                             "Removes steady background noise before the voice model. "
                             "Turn off if your voice sounds watery",
                         )
+                        yield from labeled_field(
+                            "Block bumps",
+                            Switch(self._controller.bump_filter, id="bump-filter"),
+                            "Mutes short, loud, low thumps, like touching the mic. "
+                            "Turn off if loud low words get cut",
+                        )
                         yield Button("Reset Advanced settings to defaults", id="advanced-reset")
                 with Vertical(id="controls"):
                     yield Button("Start", id="start-button", variant="primary")
@@ -320,6 +326,10 @@ class MainScreen(Screen[None]):
     def _on_noise_filter_changed(self, event: Switch.Changed) -> None:
         self._controller.set_noise_reduction(event.value)
 
+    @on(Switch.Changed, "#bump-filter")
+    def _on_bump_filter_changed(self, event: Switch.Changed) -> None:
+        self._controller.set_bump_filter(event.value)
+
     @on(Input.Changed, ".voice-field Input")
     def _on_voice_option_changed(self, event: Input.Changed) -> None:
         if not event.value or (event.validation_result and not event.validation_result.is_valid):
@@ -342,6 +352,7 @@ class MainScreen(Screen[None]):
                 getattr(self._controller.gate, name)
             )
         self.query_one("#noise-filter", Switch).value = self._controller.noise_reduction
+        self.query_one("#bump-filter", Switch).value = self._controller.bump_filter
 
     def _sync_preset_select(self) -> None:
         if not self.is_mounted:

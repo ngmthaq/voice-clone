@@ -110,3 +110,20 @@ def test_new_noise_settings_defaults_and_presets():
         values["gate_open_below_voice_db"] == 20.0 for _, values in PERFORMANCE_PRESETS.values()
     )
     assert "noise_reduction" not in config.PRESET_FIELDS
+
+
+def test_bump_filter_defaults_on_and_is_not_a_preset_field():
+    assert Settings().bump_filter is True
+    assert "bump_filter" not in config.PRESET_FIELDS
+    assert all("bump_filter" not in values for _, values in PERFORMANCE_PRESETS.values())
+
+
+def test_bump_filter_false_round_trips_and_old_file_defaults_true(tmp_path, monkeypatch):
+    settings_file = tmp_path / "settings.toml"
+    monkeypatch.setattr(config, "settings_path", lambda: settings_file)
+    settings_file.write_text("gate_hold_ms = 700\n")
+    assert config.load_settings().bump_filter is True
+
+    config.save_settings(Settings(bump_filter=False))
+
+    assert config.load_settings().bump_filter is False

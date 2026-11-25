@@ -551,3 +551,35 @@ def test_advanced_reset_turns_noise_filter_switch_back_on(empty_environment, tmp
         return app.screen.query_one("#noise-filter").value
 
     assert _run(body) is True
+
+
+def test_bump_filter_switch_shows_saved_setting(empty_environment, tmp_path):
+    (tmp_path / "settings.toml").write_text("bump_filter = false\n")
+
+    async def body(app, pilot):
+        return app.screen.query_one("#bump-filter").value
+
+    assert _run(body) is False
+
+
+def test_flipping_bump_filter_switch_calls_controller_and_is_saved(empty_environment):
+    async def body(app, pilot):
+        app.screen.query_one("#bump-filter").value = False
+        await pilot.pause()
+
+    _run(body)
+
+    assert config.load_settings().bump_filter is False
+
+
+def test_advanced_reset_turns_bump_filter_switch_back_on(empty_environment, tmp_path):
+    (tmp_path / "settings.toml").write_text("bump_filter = false\n")
+
+    async def body(app, pilot):
+        app.screen.query_one("#tabs").active = "advanced-tab"
+        await pilot.pause()
+        app.screen.query_one("#advanced-reset").press()
+        await pilot.pause()
+        return app.screen.query_one("#bump-filter").value
+
+    assert _run(body) is True

@@ -56,6 +56,7 @@ class FakePipeline:
     def __init__(self, engine, input_device, output_device, **kwargs) -> None:
         self.kwargs = kwargs
         self.calls: list[str] = []
+        self.gate_updates: list = []
         self.load = 0.0
         self.dropped_blocks = 0
         FakePipeline.instances.append(self)
@@ -75,7 +76,7 @@ class FakePipeline:
         pass
 
     def set_gate_settings(self, settings) -> None:
-        pass
+        self.gate_updates.append(settings)
 
     def set_noise_reduction(self, on) -> None:
         self.calls.append(f"noise_reduction={on}")
@@ -632,6 +633,62 @@ def test_reset_advanced_restores_noise_reduction_and_open_below_voice_db(loaded)
 
     assert loaded.noise_reduction is True
     assert loaded.gate.open_below_voice_db == 20.0
+
+
+def test_set_bump_filter_updates_property_and_is_saved(loaded, env):
+    _, settings_file = env
+
+    loaded.set_bump_filter(False)
+    loaded.flush_save()
+
+    assert loaded.bump_filter is False
+    assert saved_toml(settings_file)["bump_filter"] is False
+
+
+def test_set_bump_filter_updates_running_pipeline(loaded):
+    pipeline = start_running(loaded)
+
+    loaded.set_bump_filter(False)
+
+    assert pipeline.gate_updates[-1].block_bumps is False
+
+
+def test_start_pipeline_passes_bump_filter_from_settings(env, timers):
+    voices, _ = env
+    make_voice(voices, "alice")
+    config.save_settings(config.Settings(bump_filter=False))
+    controller = ChangerController(timers)
+    controller.load()
+
+    pipeline = start_running(controller)
+
+    assert pipeline.kwargs["gate_settings"].block_bumps is False
+
+
+def test_select_preset_keeps_bump_filter(loaded):
+    loaded.set_bump_filter(False)
+
+    loaded.select_preset("ultra")
+
+    assert loaded.bump_filter is False
+
+
+def test_reset_advanced_turns_bump_filter_on(loaded):
+    loaded.set_bump_filter(False)
+
+    loaded.reset_advanced()
+
+    assert loaded.bump_filter is True
+
+
+def test_old_settings_without_bump_filter_load_true(env, timers):
+    _, settings_file = env
+    settings_file.write_text("gate_hold_ms = 700\n")
+    controller = ChangerController(timers)
+
+    controller.load()
+
+    assert controller.bump_filter is True
 
 
 def test_old_settings_without_new_keys_load_defaults(env, timers):
