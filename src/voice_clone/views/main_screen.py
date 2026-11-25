@@ -16,6 +16,7 @@ from textual.widgets import (
     ProgressBar,
     Select,
     Static,
+    Switch,
     TabbedContent,
     TabPane,
 )
@@ -130,6 +131,16 @@ GATE_FIELDS = (
         "number",
         "How much louder than background hiss your voice must be. Raise it if noise gets in",
     ),
+    (
+        "gate-below-voice",
+        "Below my voice (dB)",
+        "open_below_voice_db",
+        0,
+        40,
+        "number",
+        "Opens only for sound within this many dB of your voice. "
+        "Lower it if people near you get in. 0 = off",
+    ),
 )
 
 
@@ -207,6 +218,12 @@ class MainScreen(Screen[None]):
                                 hint,
                                 "gate-field",
                             )
+                        yield from labeled_field(
+                            "Noise filter",
+                            Switch(self._controller.noise_reduction, id="noise-filter"),
+                            "Removes steady background noise before the voice model. "
+                            "Turn off if your voice sounds watery",
+                        )
                         yield Button("Reset Advanced settings to defaults", id="advanced-reset")
                 with Vertical(id="controls"):
                     yield Button("Start", id="start-button", variant="primary")
@@ -299,6 +316,10 @@ class MainScreen(Screen[None]):
         self._controller.set_gate_value(name, event.value)
         self._sync_preset_select()
 
+    @on(Switch.Changed, "#noise-filter")
+    def _on_noise_filter_changed(self, event: Switch.Changed) -> None:
+        self._controller.set_noise_reduction(event.value)
+
     @on(Input.Changed, ".voice-field Input")
     def _on_voice_option_changed(self, event: Input.Changed) -> None:
         if not event.value or (event.validation_result and not event.validation_result.is_valid):
@@ -320,6 +341,7 @@ class MainScreen(Screen[None]):
             self.query_one(f"#{field_id}", Input).value = _format_number(
                 getattr(self._controller.gate, name)
             )
+        self.query_one("#noise-filter", Switch).value = self._controller.noise_reduction
 
     def _sync_preset_select(self) -> None:
         if not self.is_mounted:

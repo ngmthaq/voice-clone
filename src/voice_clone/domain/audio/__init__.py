@@ -7,11 +7,13 @@ from voice_clone.domain.audio.devices import (
     rescan_devices,
 )
 from voice_clone.domain.audio.noise_gate import GateSettings
+from voice_clone.domain.audio.noise_reducer import NoiseReducer
 from voice_clone.domain.audio.pipeline import ConversionPipeline
 from voice_clone.domain.audio.ring_buffer import RingBuffer
 
 __all__ = [
     "GateSettings",
+    "NoiseReducer",
     "AudioDevice",
     "ConversionPipeline",
     "RingBuffer",

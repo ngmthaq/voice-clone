@@ -27,6 +27,8 @@ class Settings(BaseModel):
     gate_hold_ms: int = Field(500, ge=0, le=2000)
     gate_pre_open_ms: int = Field(100, ge=0, le=400)
     gate_open_above_db: float = Field(6.0, ge=0, le=30)
+    gate_open_below_voice_db: float = Field(20.0, ge=0, le=40)
+    noise_reduction: bool = True
     block_ms: int = Field(400, ge=100, le=1000)
     crossfade_ms: int = Field(80, ge=10, le=200)
     hum_filter_hz: int = Field(90, ge=0, le=200)
@@ -87,6 +89,7 @@ PRESET_FIELDS = (
     "gate_hold_ms",
     "gate_pre_open_ms",
     "gate_open_above_db",
+    "gate_open_below_voice_db",
 )
 
 

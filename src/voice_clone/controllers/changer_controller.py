@@ -61,6 +61,7 @@ GATE_SETTING_NAMES = {
     "hold_ms": "gate_hold_ms",
     "pre_open_ms": "gate_pre_open_ms",
     "open_above_floor_db": "gate_open_above_db",
+    "open_below_voice_db": "gate_open_below_voice_db",
 }
 VOICE_OPTION_NAMES = (
     "index_percent",
@@ -118,7 +119,9 @@ class ChangerController:
             hold_ms=self._settings.gate_hold_ms,
             pre_open_ms=self._settings.gate_pre_open_ms,
             open_above_floor_db=self._settings.gate_open_above_db,
+            open_below_voice_db=self._settings.gate_open_below_voice_db,
         )
+        self._noise_reduction = self._settings.noise_reduction
         self._models_ready = False
         self._working = False
         self._converting = False
@@ -241,8 +244,18 @@ class ChangerController:
         self.schedule_save()
 
     def set_gate_value(self, name: str, text: str) -> None:
-        value = float(text) if name == "open_above_floor_db" else int(text)
+        value = float(text) if name.endswith("_db") else int(text)
         self._apply_gate(replace(self._gate, **{name: value}))
+
+    @property
+    def noise_reduction(self) -> bool:
+        return self._noise_reduction
+
+    def set_noise_reduction(self, on: bool) -> None:
+        self._noise_reduction = on
+        if self._pipeline is not None:
+            self._pipeline.set_noise_reduction(on)
+        self.schedule_save()
 
     def select_preset(self, key: str) -> bool:
         self.schedule_save()
@@ -262,6 +275,7 @@ class ChangerController:
             {name: int(getattr(defaults, name)) for name in self._voice_options}
         )
         self._apply_gate(GateSettings())
+        self.set_noise_reduction(True)
 
     def begin_download(self) -> None:
         self._working = True
@@ -313,6 +327,7 @@ class ChangerController:
             crossfade_ms=self._voice_options["crossfade_ms"],
             hum_filter_hz=self._voice_options["hum_filter_hz"],
             gate_settings=self._gate,
+            noise_reduction=self._noise_reduction,
         )
         pipeline.warm_up()
         pipeline.start()
@@ -365,6 +380,8 @@ class ChangerController:
             gate_hold_ms=self._gate.hold_ms,
             gate_pre_open_ms=self._gate.pre_open_ms,
             gate_open_above_db=self._gate.open_above_floor_db,
+            gate_open_below_voice_db=self._gate.open_below_voice_db,
+            noise_reduction=self._noise_reduction,
         )
         if self._save_timer is not None:
             self._save_timer.stop()

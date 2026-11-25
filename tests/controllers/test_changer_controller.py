@@ -77,6 +77,9 @@ class FakePipeline:
     def set_gate_settings(self, settings) -> None:
         pass
 
+    def set_noise_reduction(self, on) -> None:
+        self.calls.append(f"noise_reduction={on}")
+
 
 def make_voice(voices, name):
     folder = voices / name
@@ -569,3 +572,74 @@ def test_download_finished_marks_models_ready_and_returns_initial_status(loaded)
 
 def test_download_status_prefixes_message(loaded):
     assert loaded.download_status("10%") == ("Downloading… 10%", "")
+
+
+def test_set_gate_value_open_below_voice_db_is_float_and_saved(loaded, env):
+    _, settings_file = env
+
+    loaded.set_gate_value("open_below_voice_db", "12.5")
+    loaded.flush_save()
+
+    assert loaded.gate.open_below_voice_db == 12.5
+    assert saved_toml(settings_file)["gate_open_below_voice_db"] == 12.5
+
+
+def test_set_noise_reduction_updates_property_and_is_saved(loaded, env):
+    _, settings_file = env
+
+    loaded.set_noise_reduction(False)
+    loaded.flush_save()
+
+    assert loaded.noise_reduction is False
+    assert saved_toml(settings_file)["noise_reduction"] is False
+
+
+def test_set_noise_reduction_updates_running_pipeline(loaded):
+    pipeline = start_running(loaded)
+
+    loaded.set_noise_reduction(False)
+
+    assert pipeline.calls[-1] == "noise_reduction=False"
+
+
+def test_start_pipeline_passes_noise_reduction_from_settings(env, timers):
+    voices, _ = env
+    make_voice(voices, "alice")
+    config.save_settings(config.Settings(noise_reduction=False))
+    controller = ChangerController(timers)
+    controller.load()
+
+    pipeline = start_running(controller)
+
+    assert pipeline.kwargs["noise_reduction"] is False
+
+
+def test_select_preset_keeps_noise_reduction_and_sets_open_below_voice_db(loaded):
+    loaded.set_noise_reduction(False)
+    loaded.set_gate_value("open_below_voice_db", "5")
+
+    loaded.select_preset("ultra")
+
+    assert loaded.noise_reduction is False
+    assert loaded.gate.open_below_voice_db == 20.0
+
+
+def test_reset_advanced_restores_noise_reduction_and_open_below_voice_db(loaded):
+    loaded.set_noise_reduction(False)
+    loaded.set_gate_value("open_below_voice_db", "5")
+
+    loaded.reset_advanced()
+
+    assert loaded.noise_reduction is True
+    assert loaded.gate.open_below_voice_db == 20.0
+
+
+def test_old_settings_without_new_keys_load_defaults(env, timers):
+    _, settings_file = env
+    settings_file.write_text("gate_hold_ms = 700\n")
+    controller = ChangerController(timers)
+
+    controller.load()
+
+    assert controller.gate.open_below_voice_db == 20.0
+    assert controller.noise_reduction is True

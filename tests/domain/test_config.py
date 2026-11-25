@@ -101,3 +101,12 @@ def test_light_and_minimal_use_the_balanced_noise_gate():
 
     for preset in ("minimal", "light"):
         assert {name: PERFORMANCE_PRESETS[preset][1][name] for name in gate} == balanced
+
+
+def test_new_noise_settings_defaults_and_presets():
+    assert Settings().gate_open_below_voice_db == 20.0
+    assert Settings().noise_reduction is True
+    assert all(
+        values["gate_open_below_voice_db"] == 20.0 for _, values in PERFORMANCE_PRESETS.values()
+    )
+    assert "noise_reduction" not in config.PRESET_FIELDS

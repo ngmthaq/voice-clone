@@ -392,3 +392,64 @@ def test_crossfade_is_never_longer_than_a_block(fake_engine):
     pipeline = _make(fake_engine, block_ms=100, crossfade_ms=200)
 
     assert pipeline._crossfade_samples == pipeline._hop
+
+
+def test_noise_reduction_on_runs_reducer_on_each_block(fake_engine, monkeypatch):
+    pipeline = _make(fake_engine, noise_reduction=True)
+    calls = []
+    original = pipeline._reducer.process
+    monkeypatch.setattr(
+        pipeline._reducer, "process", lambda audio: calls.append(len(audio)) or original(audio)
+    )
+
+    pipeline.process_block(_block(pipeline, 48000))
+
+    assert len(calls) == 1
+
+
+def test_noise_reduction_off_skips_reducer(fake_engine, monkeypatch):
+    pipeline = _make(fake_engine, noise_reduction=False)
+    calls = []
+    monkeypatch.setattr(pipeline._reducer, "process", lambda audio: calls.append(1) or audio)
+
+    pipeline.process_block(_block(pipeline, 48000))
+
+    assert calls == []
+
+
+def test_noise_reduction_can_be_switched_while_running(fake_engine, monkeypatch):
+    pipeline = _make(fake_engine, noise_reduction=True)
+    calls = []
+    original = pipeline._reducer.process
+    monkeypatch.setattr(
+        pipeline._reducer, "process", lambda audio: calls.append(1) or original(audio)
+    )
+    block = _block(pipeline, 48000)
+
+    pipeline.set_noise_reduction(False)
+    pipeline.process_block(block)
+    off_calls = len(calls)
+    pipeline.set_noise_reduction(True)
+    pipeline.process_block(block)
+
+    assert (off_calls, len(calls)) == (0, 1)
+
+
+def test_turning_noise_reduction_on_resets_reducer(fake_engine, monkeypatch):
+    pipeline = _make(fake_engine, noise_reduction=False)
+    resets = []
+    monkeypatch.setattr(pipeline._reducer, "reset", lambda: resets.append(1))
+
+    pipeline.set_noise_reduction(True)
+
+    assert resets == [1]
+
+
+def test_setting_noise_reduction_on_while_already_on_does_not_reset(fake_engine, monkeypatch):
+    pipeline = _make(fake_engine, noise_reduction=True)
+    resets = []
+    monkeypatch.setattr(pipeline._reducer, "reset", lambda: resets.append(1))
+
+    pipeline.set_noise_reduction(True)
+
+    assert resets == []

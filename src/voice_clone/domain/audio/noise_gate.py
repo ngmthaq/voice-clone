@@ -6,6 +6,8 @@ FRAME_MS = 20
 MIN_THRESHOLD_DB = -55.0
 DIGITAL_SILENCE_DB = -90.0
 FLOOR_RISE_DB_PER_FRAME = 0.05
+VOICE_FALL_DB_PER_FRAME = 0.01
+VOICE_RISE = 0.1
 
 
 @dataclass(frozen=True)
@@ -13,13 +15,17 @@ class GateSettings:
     hold_ms: int = 500
     pre_open_ms: int = 100
     open_above_floor_db: float = 6.0
+    open_below_voice_db: float = 20.0
 
 
 class NoiseGate:
     """Silences the mic between words, so the model does not turn hiss into noise.
 
     It learns the mic's noise floor (the quietest recent level) and opens a few dB above
-    it. Each call gets a whole block, so the gate can open a little before a word starts.
+    it. It also learns the voice level (rising quickly toward steady speech, falling very slowly,
+    and unchanged in silence) and, when set, opens only for sound
+    within a set number of dB of it, so quieter voices nearby stay out. Each call gets a
+    whole block, so the gate can open a little before a word starts.
     After speech it stays open for a while, so word endings and short pauses are not cut.
     Gain changes are ramped over one frame to avoid clicks.
     """
@@ -27,6 +33,7 @@ class NoiseGate:
     def __init__(self, sample_rate: int, settings: GateSettings | None = None) -> None:
         self._frame = sample_rate * FRAME_MS // 1000
         self._floor_db: float | None = None
+        self._voice_db: float | None = None
         self._hold_left = 0
         self._gain = 0.0
         self.configure(settings or GateSettings())
@@ -35,6 +42,7 @@ class NoiseGate:
         self._hold_frames = settings.hold_ms // FRAME_MS
         self._pre_frames = settings.pre_open_ms // FRAME_MS
         self._open_above_db = settings.open_above_floor_db
+        self._open_below_voice_db = settings.open_below_voice_db
         self._hold_left = min(self._hold_left, self._hold_frames)
 
     @property
@@ -61,13 +69,30 @@ class NoiseGate:
                 self._floor_db = level_db
             else:
                 self._floor_db += FLOOR_RISE_DB_PER_FRAME
-        if level_db > self.threshold_db:
+        passes_floor = level_db > self.threshold_db
+        self._track_voice(level_db, passes_floor)
+        if passes_floor and self._near_voice(level_db):
             self._hold_left = self._hold_frames
             return True
         if self._hold_left > 0:
             self._hold_left -= 1
             return True
         return False
+
+    def _track_voice(self, level_db: float, passes_floor: bool) -> None:
+        if not passes_floor:
+            return
+        if self._voice_db is None:
+            self._voice_db = level_db
+        elif level_db > self._voice_db:
+            self._voice_db += VOICE_RISE * (level_db - self._voice_db)
+        else:
+            self._voice_db = max(self._voice_db - VOICE_FALL_DB_PER_FRAME, self.threshold_db)
+
+    def _near_voice(self, level_db: float) -> bool:
+        if self._open_below_voice_db <= 0 or self._voice_db is None:
+            return True
+        return level_db >= self._voice_db - self._open_below_voice_db
 
 
 def _open_early(is_open: list[bool], frames: int) -> list[bool]:

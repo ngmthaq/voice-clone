@@ -62,6 +62,18 @@ Context, Block size and Crossfade decide most of the speed. Index voice adds a s
 
 A higher preset gives less delay and clearer words, but needs a faster computer. If the app says "Too slow for this computer", pick a lighter one. Picking a preset replaces any Advanced settings you changed. Changing any value on the Advanced tab afterwards shows **Custom**.
 
+## Noise gate and noise filter
+
+These are on the **Advanced** tab. They help when other people or noise are near you.
+
+| Setting | Default | What it does |
+| --- | --- | --- |
+| Above noise (dB) | 6 | How much louder than the background hiss your voice must be. Raise it if noise gets in. |
+| Below my voice (dB) | 20 | The app learns how loud your voice is. It opens only for sound within this many dB of it. Lower it if people near you get in. If your quiet words get cut, raise it. 0 turns it off. |
+| Noise filter | On | Removes steady background noise, like a fan, before the voice model. Turn it off if your voice sounds watery. |
+
+Picking a preset does not change the Noise filter. "Reset Advanced settings to defaults" turns it on.
+
 ## Speed and delay
 
 These are on the **Advanced** tab, under **Speed and delay**.

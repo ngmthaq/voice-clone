@@ -503,3 +503,51 @@ def test_saved_settings_win_over_the_cpu_default(empty_environment, monkeypatch,
         return app.screen.query_one("#preset-select").value
 
     assert _run(body) == "balanced"
+
+
+def test_below_voice_input_shows_saved_value(empty_environment, tmp_path):
+    (tmp_path / "settings.toml").write_text("gate_open_below_voice_db = 12.5\n")
+
+    async def body(app, pilot):
+        return app.screen.query_one("#gate-below-voice").value
+
+    assert _run(body) == "12.5"
+
+
+def test_below_voice_input_shows_default(empty_environment):
+    async def body(app, pilot):
+        return app.screen.query_one("#gate-below-voice").value
+
+    assert _run(body) == "20"
+
+
+def test_noise_filter_switch_shows_saved_setting(empty_environment, tmp_path):
+    (tmp_path / "settings.toml").write_text("noise_reduction = false\n")
+
+    async def body(app, pilot):
+        return app.screen.query_one("#noise-filter").value
+
+    assert _run(body) is False
+
+
+def test_flipping_noise_filter_switch_calls_controller_and_is_saved(empty_environment):
+    async def body(app, pilot):
+        app.screen.query_one("#noise-filter").value = False
+        await pilot.pause()
+
+    _run(body)
+
+    assert config.load_settings().noise_reduction is False
+
+
+def test_advanced_reset_turns_noise_filter_switch_back_on(empty_environment, tmp_path):
+    (tmp_path / "settings.toml").write_text("noise_reduction = false\n")
+
+    async def body(app, pilot):
+        app.screen.query_one("#tabs").active = "advanced-tab"
+        await pilot.pause()
+        app.screen.query_one("#advanced-reset").press()
+        await pilot.pause()
+        return app.screen.query_one("#noise-filter").value
+
+    assert _run(body) is True

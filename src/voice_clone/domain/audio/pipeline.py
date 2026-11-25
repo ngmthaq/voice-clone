@@ -12,6 +12,7 @@ from scipy.signal import butter, sosfilt
 
 from voice_clone.domain.audio.devices import AudioDevice
 from voice_clone.domain.audio.noise_gate import GateSettings, NoiseGate
+from voice_clone.domain.audio.noise_reducer import NoiseReducer
 from voice_clone.domain.audio.ring_buffer import RingBuffer
 from voice_clone.domain.errors import DeviceNotFoundError
 
@@ -55,6 +56,7 @@ class ConversionPipeline:
         crossfade_ms: int = 80,
         hum_filter_hz: int = 90,
         gate_settings: GateSettings | None = None,
+        noise_reduction: bool = True,
     ) -> None:
         self._engine = engine
         self._input_device = input_device
@@ -62,6 +64,7 @@ class ConversionPipeline:
         self._on_levels = on_levels
         self._on_error = on_error
         self._gate_settings = gate_settings or GateSettings()
+        self._noise_reduction = noise_reduction
         self._input_rate = int(input_device.default_samplerate)
         self._output_rate = int(output_device.default_samplerate)
         self._engine_in_rate = engine.input_sample_rate
@@ -135,6 +138,11 @@ class ConversionPipeline:
         self._gate_settings = settings
         self._gate.configure(settings)
 
+    def set_noise_reduction(self, on: bool) -> None:
+        if on and not self._noise_reduction:
+            self._reducer.reset()
+        self._noise_reduction = on
+
     def set_context_ms(self, context_ms: int) -> None:
         self._context_samples = self._context_length(context_ms)
 
@@ -150,6 +158,8 @@ class ConversionPipeline:
     def process_block(self, block: np.ndarray) -> np.ndarray:
         block16 = self._input_resampler.resample_chunk(np.asarray(block, dtype=np.float32))
         block16 = self._remove_hum(block16)
+        if self._noise_reduction:
+            block16 = self._reducer.process(block16)
         self._fifo = np.concatenate([self._fifo, block16])
         bodies: list[np.ndarray] = []
         while len(self._fifo) >= self._hop:
@@ -212,6 +222,7 @@ class ConversionPipeline:
         )
         sections = 0 if self._hum_sos is None else self._hum_sos.shape[0]
         self._hum_state = np.zeros((sections, 2))
+        self._reducer = NoiseReducer(self._engine_in_rate)
         self._gate = NoiseGate(self._engine_in_rate, self._gate_settings)
         self._last_hop_silent = False
         self._history = np.zeros(self._context_samples, dtype=np.float32)
