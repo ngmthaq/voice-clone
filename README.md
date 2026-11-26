@@ -6,13 +6,9 @@ It runs in the terminal (a Textual TUI).
 
 ## Quick start
 
-1. **Install** the prerequisites (Python 3.12, and BlackHole on macOS or VB-CABLE on Windows) and the app: follow [docs/INSTALL.md](docs/INSTALL.md) for your computer.
+1. **Prerequisites:** Python 3.12, git, ffmpeg, and BlackHole on macOS or VB-CABLE on Windows. The run script in step 2 can install them for you (with Homebrew or winget) after one yes/no question. To install them by hand, see [docs/INSTALL.md](docs/INSTALL.md).
 
-2. **Run** the app. Choose **Check setup** first to see if anything is missing and to download the base models:
-
-   ```bash
-   python -m voice_clone run
-   ```
+2. **Run** `scripts/run.sh` (macOS) or `scripts\run.ps1` (Windows). On the first run it installs missing prerequisites, installs the app, downloads the models, measures the speed of this computer, and starts the app. This takes a while and needs several GB of disk space. Later runs start the app quickly. You can also run `python -m voice_clone run` after activating `.venv`.
 
 3. **Get a voice:** train one from 10–30 minutes of your recordings ([docs/TRAINING.md](docs/TRAINING.md)), or add RVC voice files you already have ([docs/VOICES.md](docs/VOICES.md)).
 

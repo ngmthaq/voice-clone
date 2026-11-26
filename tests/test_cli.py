@@ -259,3 +259,152 @@ def test_bench_ctrl_c_returns_exit_code_130(monkeypatch: pytest.MonkeyPatch) -> 
 def test_bench_rejects_unknown_preset() -> None:
     with pytest.raises(SystemExit):
         cli.main(["bench", "--preset", "turbo"])
+
+
+def test_download_models_prints_each_progress_message_and_returns_zero(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    def fake_download(self, progress):
+        progress("Downloading hubert_base.pt", 0.0)
+        progress("Downloading rmvpe.pt", 0.5)
+
+    monkeypatch.setattr(f"{CONTROLLER}.SetupController.download", fake_download)
+
+    code = cli.main(["download-models"])
+
+    assert code == 0
+    assert capsys.readouterr().out.splitlines() == [
+        "Downloading hubert_base.pt",
+        "Downloading rmvpe.pt",
+    ]
+
+
+def test_download_models_when_files_exist_prints_a_message_and_returns_zero(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    def fake_download(self, progress):
+        progress("Base models already downloaded", 1.0)
+
+    monkeypatch.setattr(f"{CONTROLLER}.SetupController.download", fake_download)
+
+    code = cli.main(["download-models"])
+
+    assert code == 0
+    assert "already downloaded" in capsys.readouterr().out
+
+
+def test_download_models_error_prints_it_once_and_returns_exit_code_1(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setattr(
+        f"{CONTROLLER}.SetupController.download", lambda self, progress: "Error: boom"
+    )
+
+    code = cli.main(["download-models"])
+
+    assert code == cli.EXIT_ERROR
+    assert capsys.readouterr().out.count("Error: boom") == 1
+
+
+def test_download_models_ctrl_c_returns_exit_code_130(monkeypatch: pytest.MonkeyPatch) -> None:
+    def fake_download(self, progress):
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(f"{CONTROLLER}.SetupController.download", fake_download)
+
+    assert cli.main(["download-models"]) == cli.EXIT_INTERRUPTED
+
+
+def test_install_applio_prints_the_report_messages_and_returns_zero(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    def fake_install(self, report):
+        report("Step 1/2: Downloading Applio")
+        report("Step 2/2: Installing")
+
+    monkeypatch.setattr(f"{CONTROLLER}.SetupController.install_applio_cli", fake_install)
+
+    code = cli.main(["install-applio"])
+
+    assert code == 0
+    assert capsys.readouterr().out.splitlines() == [
+        "Step 1/2: Downloading Applio",
+        "Step 2/2: Installing",
+    ]
+
+
+def test_install_applio_error_prints_it_and_returns_exit_code_1(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    def fake_install(self, report):
+        raise VoiceCloneError("boom")
+
+    monkeypatch.setattr(f"{CONTROLLER}.SetupController.install_applio_cli", fake_install)
+
+    code = cli.main(["install-applio"])
+
+    assert code == cli.EXIT_ERROR
+    assert "Error: boom" in capsys.readouterr().out
+
+
+def test_install_applio_ctrl_c_returns_exit_code_130(monkeypatch: pytest.MonkeyPatch) -> None:
+    def fake_install(self, report):
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(f"{CONTROLLER}.SetupController.install_applio_cli", fake_install)
+
+    assert cli.main(["install-applio"]) == cli.EXIT_INTERRUPTED
+
+
+def test_measure_speed_prints_the_reported_lines_and_returns_zero(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    def fake_measure(self, if_needed, report):
+        report("Measuring speed: Light load 0.30")
+        report("Done")
+        return True
+
+    monkeypatch.setattr(f"{CONTROLLER}.SetupController.measure_speed_cli", fake_measure)
+
+    code = cli.main(["measure-speed"])
+
+    assert code == 0
+    assert capsys.readouterr().out.splitlines() == ["Measuring speed: Light load 0.30", "Done"]
+
+
+def test_measure_speed_returns_exit_code_1_when_it_did_not_finish(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        f"{CONTROLLER}.SetupController.measure_speed_cli", lambda self, if_needed, report: False
+    )
+
+    assert cli.main(["measure-speed"]) == cli.EXIT_ERROR
+
+
+def test_measure_speed_ctrl_c_returns_exit_code_130(monkeypatch: pytest.MonkeyPatch) -> None:
+    def fake_measure(self, if_needed, report):
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(f"{CONTROLLER}.SetupController.measure_speed_cli", fake_measure)
+
+    assert cli.main(["measure-speed"]) == cli.EXIT_INTERRUPTED
+
+
+@pytest.mark.parametrize(
+    ("argv", "expected"), [(["measure-speed", "--if-needed"], True), (["measure-speed"], False)]
+)
+def test_measure_speed_passes_the_if_needed_flag(
+    monkeypatch: pytest.MonkeyPatch, argv: list[str], expected: bool
+) -> None:
+    seen = []
+
+    def fake_measure(self, if_needed, report):
+        seen.append(if_needed)
+        return True
+
+    monkeypatch.setattr(f"{CONTROLLER}.SetupController.measure_speed_cli", fake_measure)
+
+    cli.main(argv)
+
+    assert seen == [expected]

@@ -171,6 +171,7 @@ def measure_and_save(
     apply_engine_options(engine, next(iter(presets.values())))
     engine.load(profile)
     best, results = pick_preset(engine, presets, on_result=on_result)
-    if best is not None:
-        save_settings(apply_preset(load_settings(), best))
+    chosen = best if best is not None else next(iter(presets))
+    saved = apply_preset(load_settings(), chosen)
+    save_settings(saved.model_copy(update={"speed_measured": True}))
     return best, results

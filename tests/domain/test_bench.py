@@ -115,13 +115,14 @@ def test_measure_and_save_saves_the_best_preset(measure_environment, monkeypatch
     assert (settings.block_ms, settings.context_ms) == (400, 1000)
 
 
-def test_measure_and_save_leaves_settings_when_nothing_fits(measure_environment, monkeypatch):
-    from voice_clone.domain.config import settings_saved
+def test_measure_and_save_saves_the_lightest_when_nothing_fits(measure_environment, monkeypatch):
+    from voice_clone.domain.config import load_settings
 
     _fake_loads(monkeypatch, {"minimal": 0.9})
 
     assert bench.measure_and_save()[0] is None
-    assert not settings_saved()
+    settings = load_settings()
+    assert settings.speed_measured and settings.block_ms == 1000
 
 
 def test_measure_and_save_needs_a_voice(measure_environment, monkeypatch, tmp_path):
@@ -150,3 +151,29 @@ def test_measure_and_save_never_picks_above_balanced(measure_environment, monkey
     assert best == "balanced"
     assert measured == ["minimal", "light", "balanced"]
     assert load_settings().block_ms == 400
+
+
+def test_measure_and_save_sets_the_speed_measured_flag(measure_environment, monkeypatch):
+    from voice_clone.domain.config import load_settings
+
+    _fake_loads(monkeypatch, {"minimal": 0.2, "light": 0.3, "balanced": 0.9})
+
+    best, _ = bench.measure_and_save()
+
+    settings = load_settings()
+    assert best == "light"
+    assert settings.speed_measured is True
+    assert settings.block_ms == PERFORMANCE_PRESETS["light"][1]["block_ms"]
+
+
+def test_measure_and_save_saves_nothing_when_it_raises(measure_environment, monkeypatch, tmp_path):
+    from voice_clone.domain.config import load_settings
+    from voice_clone.domain.errors import ProfileError
+
+    monkeypatch.setattr("voice_clone.domain.paths.voices_dir", lambda: tmp_path / "none")
+
+    with pytest.raises(ProfileError):
+        bench.measure_and_save()
+
+    assert load_settings().speed_measured is False
+    assert not (tmp_path / "settings.toml").exists()

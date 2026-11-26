@@ -40,6 +40,7 @@ class Settings(BaseModel):
     train_batch_size: int = Field(8, ge=1, le=50)
     train_sample_rate: int = 40000
     train_save_every: int = Field(10, ge=1, le=100)
+    speed_measured: bool = False
 
 
 def settings_path() -> Path:

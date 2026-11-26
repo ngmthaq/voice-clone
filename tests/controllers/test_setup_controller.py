@@ -745,3 +745,142 @@ def test_bench_passes_the_seconds_to_run_bench(
     run_bench(controller, ["minimal"], {}, seconds=2.5)
 
     assert seen == [2.5]
+
+
+def test_install_applio_cli_installs_into_the_dot_applio_folder(
+    controller: SetupController, applio: type[FakeApplio], monkeypatch: pytest.MonkeyPatch, tmp_path
+) -> None:
+    built = []
+
+    class Recording(FakeApplio):
+        def __init__(self, root, runner=None) -> None:
+            super().__init__(root, runner)
+            built.append(root)
+
+    monkeypatch.setattr(sc, "Applio", Recording)
+
+    controller.install_applio_cli(lambda message: None)
+
+    assert built == [tmp_path / ".applio"]
+
+
+def test_install_applio_cli_passes_the_report_callable_through(
+    controller: SetupController, applio: type[FakeApplio]
+) -> None:
+    messages = []
+
+    controller.install_applio_cli(messages.append)
+
+    assert messages == ["Step 1/2: Downloading Applio…"]
+
+
+def test_install_applio_cli_lets_errors_propagate(
+    controller: SetupController, applio: type[FakeApplio]
+) -> None:
+    applio.outcome = VoiceCloneError("boom")
+
+    with pytest.raises(VoiceCloneError, match="boom"):
+        controller.install_applio_cli(lambda message: None)
+
+
+@pytest.fixture
+def cli_measure(controller: SetupController, monkeypatch: pytest.MonkeyPatch):
+    state = {"measured": False, "present": True, "calls": 0}
+    monkeypatch.setattr(sc, "load_settings", lambda: Settings(speed_measured=state["measured"]))
+    monkeypatch.setattr(sc, "base_models_present", lambda path: state["present"])
+
+    def fake_measure(on_result=None):
+        state["calls"] += 1
+        result = BenchResult(300, [0.5, 0.5])
+        on_result("balanced", result)
+        return "balanced", {"balanced": result}
+
+    monkeypatch.setattr(sc, "measure_and_save", fake_measure)
+    return state
+
+
+def test_measure_speed_cli_skips_when_already_measured(
+    controller: SetupController, cli_measure: dict
+) -> None:
+    cli_measure["measured"] = True
+    lines: list[str] = []
+
+    done = controller.measure_speed_cli(True, lines.append)
+
+    assert done is True
+    assert lines == []
+    assert cli_measure["calls"] == 0
+
+
+def test_measure_speed_cli_measures_when_needed_and_not_yet_measured(
+    controller: SetupController, cli_measure: dict
+) -> None:
+    done = controller.measure_speed_cli(True, lambda _: None)
+
+    assert done is True
+    assert cli_measure["calls"] == 1
+
+
+def test_measure_speed_cli_measures_again_without_if_needed(
+    controller: SetupController, cli_measure: dict
+) -> None:
+    cli_measure["measured"] = True
+
+    controller.measure_speed_cli(False, lambda _: None)
+
+    assert cli_measure["calls"] == 1
+
+
+def test_measure_speed_cli_reports_missing_models(
+    controller: SetupController, cli_measure: dict
+) -> None:
+    cli_measure["present"] = False
+    lines: list[str] = []
+
+    done = controller.measure_speed_cli(False, lines.append)
+
+    assert done is False
+    assert len(lines) == 1 and lines[0].startswith("Speed test skipped:")
+    assert cli_measure["calls"] == 0
+
+
+def test_measure_speed_cli_reports_a_voice_clone_error(
+    controller: SetupController, cli_measure: dict, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def failing(on_result=None):
+        raise VoiceCloneError("Add or train a voice first.")
+
+    monkeypatch.setattr(sc, "measure_and_save", failing)
+    lines: list[str] = []
+
+    done = controller.measure_speed_cli(False, lines.append)
+
+    assert done is False
+    assert lines == ["Error: Add or train a voice first."]
+
+
+def test_measure_speed_cli_reports_each_preset_then_the_result(
+    controller: SetupController, cli_measure: dict
+) -> None:
+    lines: list[str] = []
+
+    done = controller.measure_speed_cli(False, lines.append)
+
+    assert done is True
+    assert lines == [
+        "Measuring speed: Balanced load 0.50",
+        "This computer keeps up with Balanced (load 0.50). Saved: the Voice changer now uses it.",
+    ]
+
+
+def test_measure_speed_cli_warns_when_nothing_fits(
+    controller: SetupController, cli_measure: dict, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    slow = BenchResult(1000, [1.3])
+    monkeypatch.setattr(sc, "measure_and_save", lambda on_result=None: (None, {"minimal": slow}))
+    lines: list[str] = []
+
+    done = controller.measure_speed_cli(False, lines.append)
+
+    assert done is True
+    assert lines[-1].startswith("Warning: Even Minimal is too slow")

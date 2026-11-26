@@ -127,3 +127,14 @@ def test_bump_filter_false_round_trips_and_old_file_defaults_true(tmp_path, monk
     config.save_settings(Settings(bump_filter=False))
 
     assert config.load_settings().bump_filter is False
+
+
+def test_speed_measured_defaults_to_false():
+    assert Settings().speed_measured is False
+
+
+def test_load_without_the_speed_measured_key_gives_false(tmp_path):
+    path = tmp_path / "settings.toml"
+    path.write_text('profile = "a"\n')
+
+    assert load_settings(path).speed_measured is False

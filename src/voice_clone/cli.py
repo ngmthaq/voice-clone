@@ -20,6 +20,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         return _run_train(args)
     if args.command == "bench":
         return _run_bench_command(args)
+    if args.command == "download-models":
+        return _run_download_models()
+    if args.command == "install-applio":
+        return _run_install_applio()
+    if args.command == "measure-speed":
+        return _run_measure_speed(args)
     from voice_clone.views.app import RESTART, VoiceCloneApp
 
     while VoiceCloneApp().run() == RESTART:
@@ -108,7 +114,65 @@ def _build_parser() -> argparse.ArgumentParser:
         default=None,
         help="Model precision on the GPU (default: the saved setting).",
     )
+    commands.add_parser(
+        "download-models",
+        help="Download the base voice models (about 560 MB) into models/.",
+        description="Downloads the base models. Files that are already there are skipped.",
+    )
+    commands.add_parser(
+        "install-applio",
+        help="Install Applio for voice training (several GB) into training/.applio.",
+        description="Installs Applio and its pretrained models. Needs git and Python 3.12.",
+    )
+    measure = commands.add_parser(
+        "measure-speed",
+        help="Test this computer and save the fastest Performance preset that keeps up.",
+        description="The same test as the Measure speed button. Needs the base models and a voice.",
+    )
+    measure.add_argument(
+        "--if-needed",
+        action="store_true",
+        help="Do nothing when the speed was already measured.",
+    )
     return parser
+
+
+def _run_download_models() -> int:
+    from voice_clone.controllers.setup_controller import SetupController
+
+    try:
+        error = SetupController().download(lambda message, _fraction: print(message, flush=True))
+    except KeyboardInterrupt:
+        return EXIT_INTERRUPTED
+    if error is not None:
+        print(error)
+        return EXIT_ERROR
+    return 0
+
+
+def _run_install_applio() -> int:
+    from voice_clone.controllers.setup_controller import SetupController
+
+    try:
+        SetupController().install_applio_cli(lambda message: print(message, flush=True))
+    except VoiceCloneError as exc:
+        print(f"Error: {exc}")
+        return EXIT_ERROR
+    except KeyboardInterrupt:
+        return EXIT_INTERRUPTED
+    return 0
+
+
+def _run_measure_speed(args: argparse.Namespace) -> int:
+    from voice_clone.controllers.setup_controller import SetupController
+
+    try:
+        done = SetupController().measure_speed_cli(
+            args.if_needed, lambda message: print(message, flush=True)
+        )
+    except KeyboardInterrupt:
+        return EXIT_INTERRUPTED
+    return 0 if done else EXIT_ERROR
 
 
 def _run_bench_command(args: argparse.Namespace) -> int:

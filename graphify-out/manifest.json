@@ -12,9 +12,9 @@
     "semantic_hash": "1928be7dfc0ea01ffc0a0c3df58080f1"
   },
   "pyproject.toml": {
-    "mtime": 1795485852.9674208,
-    "seen": 1795487002.348758,
-    "ast_hash": "8c1da96753e4ad1be52ed32fac457fec",
+    "mtime": 1795707983.273981,
+    "seen": 1795708629.1822898,
+    "ast_hash": "cb14854fab806c33e08107c65de20e2e",
     "semantic_hash": ""
   },
   "src/voice_clone/__init__.py": {
@@ -30,9 +30,9 @@
     "semantic_hash": "b3a2f1de6bbd4ec8488e83b843069569"
   },
   "src/voice_clone/cli.py": {
-    "mtime": 1795501792.6119769,
-    "seen": 1795501828.148181,
-    "ast_hash": "7c52b3d993dce967f42b5ba860e435bc",
+    "mtime": 1795703854.5322328,
+    "seen": 1795704069.9437702,
+    "ast_hash": "9861970b4d0c1d5f9163c53ed51833a9",
     "semantic_hash": ""
   },
   "src/voice_clone/logging_setup.py": {
@@ -54,9 +54,9 @@
     "semantic_hash": ""
   },
   "tests/test_cli.py": {
-    "mtime": 1795501792.6134562,
-    "seen": 1795501828.148227,
-    "ast_hash": "ca849166d6758906a509bbe6c6efea49",
+    "mtime": 1795704140.0869696,
+    "seen": 1795708629.182343,
+    "ast_hash": "74eac138d5ae386200230dc4387da602",
     "semantic_hash": ""
   },
   "src/voice_clone/controllers/__init__.py": {
@@ -102,15 +102,15 @@
     "semantic_hash": ""
   },
   "src/voice_clone/domain/bench.py": {
-    "mtime": 1795485852.9693892,
-    "seen": 1795487002.3487659,
-    "ast_hash": "c18d097592f8b03f03a709bbb03451a3",
+    "mtime": 1795703854.531948,
+    "seen": 1795704069.943779,
+    "ast_hash": "49eabf965cbbfb221c57ffd54e874d16",
     "semantic_hash": ""
   },
   "src/voice_clone/domain/config.py": {
-    "mtime": 1795623598.9804409,
-    "seen": 1795624187.447197,
-    "ast_hash": "47c597c0bbc545f5bab52636f20a1c4b",
+    "mtime": 1795703854.5314496,
+    "seen": 1795704069.943779,
+    "ast_hash": "3f314f4098108714a35d9a45f8e3127b",
     "semantic_hash": ""
   },
   "src/voice_clone/domain/engine/__init__.py": {
@@ -222,9 +222,9 @@
     "semantic_hash": ""
   },
   "src/voice_clone/domain/training/applio.py": {
-    "mtime": 1795485852.9733524,
-    "seen": 1795487002.348777,
-    "ast_hash": "d5b914e1d7973d9ec234f491121754a8",
+    "mtime": 1795707983.2753868,
+    "seen": 1795708629.182318,
+    "ast_hash": "e443cb65c4578da480941ca0c09429bb",
     "semantic_hash": ""
   },
   "src/voice_clone/domain/training/commands.py": {
@@ -372,15 +372,15 @@
     "semantic_hash": ""
   },
   "tests/domain/test_bench.py": {
-    "mtime": 1795485852.9777536,
-    "seen": 1795487002.3487942,
-    "ast_hash": "d23c39ba9cbda1b817bb33f4025b5f67",
+    "mtime": 1795704140.0118468,
+    "seen": 1795708629.182338,
+    "ast_hash": "62d6dd64e90b19e1308a3d1fd8857efe",
     "semantic_hash": ""
   },
   "tests/domain/test_config.py": {
-    "mtime": 1795623720.816674,
-    "seen": 1795624187.447228,
-    "ast_hash": "f218de9434a114c3e118b1fc369dec01",
+    "mtime": 1795704140.0097759,
+    "seen": 1795708629.182339,
+    "ast_hash": "0ce583e4b17c304fe4ccc3a52670e392",
     "semantic_hash": ""
   },
   "tests/domain/test_setup_check.py": {
@@ -396,9 +396,9 @@
     "semantic_hash": ""
   },
   "tests/domain/training/test_applio.py": {
-    "mtime": 1795485852.978251,
-    "seen": 1795487002.348796,
-    "ast_hash": "da47d7787086d2bba6390bc7f9acdb03",
+    "mtime": 1795708210.8124776,
+    "seen": 1795708629.1823401,
+    "ast_hash": "0de4afcb2d5d0dbc9a22932b76dbc309",
     "semantic_hash": ""
   },
   "tests/domain/training/test_commands.py": {
@@ -882,15 +882,15 @@
     "semantic_hash": ""
   },
   "README.md": {
-    "mtime": 1795434634.7060378,
-    "seen": 1795485668.815103,
-    "ast_hash": "e8e8d9d87b82be62e74d7175ac352add",
+    "mtime": 1795704816.8223364,
+    "seen": 1795708629.1823921,
+    "ast_hash": "de28ed7fe3fefd345b1c31beefad6c00",
     "semantic_hash": ""
   },
   "docs/INSTALL.md": {
-    "mtime": 1795451204.2698767,
-    "seen": 1795485668.815103,
-    "ast_hash": "42c151520c47fabbe63c9408c75abae1",
+    "mtime": 1795708469.2054558,
+    "seen": 1795708629.182393,
+    "ast_hash": "e933247fe70d86f50c3267313a715567",
     "semantic_hash": ""
   },
   "docs/READING_SCRIPT.md": {
@@ -906,15 +906,15 @@
     "semantic_hash": ""
   },
   "docs/TRAINING.md": {
-    "mtime": 1795441836.4518929,
-    "seen": 1795485668.815104,
-    "ast_hash": "67e392534b6d64a98ad19293a9e9f8c5",
+    "mtime": 1795703992.5154102,
+    "seen": 1795704069.943868,
+    "ast_hash": "7fa6109b8c3e504c1788b5ce56b1c623",
     "semantic_hash": ""
   },
   "docs/USAGE.md": {
-    "mtime": 1795623598.9827769,
-    "seen": 1795624187.447284,
-    "ast_hash": "173f3073ac89e36fd42744f2fcd15f39",
+    "mtime": 1795703992.5160346,
+    "seen": 1795704069.9438689,
+    "ast_hash": "66628d9bef05334a37b8ec4abc5d56c9",
     "semantic_hash": ""
   },
   "docs/VOICES.md": {
@@ -996,15 +996,15 @@
     "semantic_hash": ""
   },
   "src/voice_clone/controllers/setup_controller.py": {
-    "mtime": 1795487767.5723085,
-    "seen": 1795488780.548589,
-    "ast_hash": "242b1749b56b6fc8844c03d53a29cef9",
+    "mtime": 1795703854.532097,
+    "seen": 1795704069.943773,
+    "ast_hash": "2d37847dfb1fa7695eaeb9caef36c652",
     "semantic_hash": ""
   },
   "tests/controllers/test_setup_controller.py": {
-    "mtime": 1795488322.2423959,
-    "seen": 1795488780.548617,
-    "ast_hash": "bf8398610928b065e6bae1b4de63556c",
+    "mtime": 1795704140.0136294,
+    "seen": 1795708629.1823292,
+    "ast_hash": "fb56071c2f33f9e9f1c68eeaf90ee883",
     "semantic_hash": ""
   },
   "plans/2026-11-24-09-34-26-s3-setup-controller.md": {
@@ -1077,6 +1077,60 @@
     "mtime": 1795624184.8381138,
     "seen": 1795624187.447294,
     "ast_hash": "8fa36121c82f93b095021607d8d1ff6a",
+    "semantic_hash": ""
+  },
+  "scripts/run.ps1": {
+    "mtime": 1795708469.20531,
+    "seen": 1795708629.182291,
+    "ast_hash": "d60b280bf92cd9e7cb4bc37eae26373f",
+    "semantic_hash": ""
+  },
+  "scripts/run.sh": {
+    "mtime": 1795708469.20483,
+    "seen": 1795708629.182292,
+    "ast_hash": "3860ba925582139f03d5763180821d1d",
+    "semantic_hash": ""
+  },
+  "plans/2026-11-26-21-03-57-install-and-run-scripts.md": {
+    "mtime": 1795701871.3938801,
+    "seen": 1795702756.8839538,
+    "ast_hash": "d0d7d64367228729652f29e3b272f1aa",
+    "semantic_hash": ""
+  },
+  "plans/2026-11-26-21-15-55-install-questions-and-model-download.md": {
+    "mtime": 1795702597.3367486,
+    "seen": 1795702756.8839538,
+    "ast_hash": "e4d8424121185b54ec7002260affe5da",
+    "semantic_hash": ""
+  },
+  "plans/2026-11-26-21-36-24-one-automatic-run-script.md": {
+    "mtime": 1795703828.4887104,
+    "seen": 1795704069.943881,
+    "ast_hash": "8f79081027b1e64edd16008ad0c9272e",
+    "semantic_hash": ""
+  },
+  "plans/2026-11-26-21-50-24-run-scripts-install-prerequisites.md": {
+    "mtime": 1795704663.0608075,
+    "seen": 1795708629.1824079,
+    "ast_hash": "44a9890e2131f21d8c4270761f4effbf",
+    "semantic_hash": ""
+  },
+  "plans/2026-11-26-22-10-59-friendlier-prerequisite-messages.md": {
+    "mtime": 1795705884.5555892,
+    "seen": 1795708629.182409,
+    "ast_hash": "9d103594b149736047137df1e3c68a38",
+    "semantic_hash": ""
+  },
+  "plans/2026-11-26-22-45-35-company-proxy-pip-system-certs.md": {
+    "mtime": 1795707960.951098,
+    "seen": 1795708629.182409,
+    "ast_hash": "a45fcb024a0502d2502620221dfcfd14",
+    "semantic_hash": ""
+  },
+  "plans/2026-11-26-22-54-02-run-scripts-install-dev-tools.md": {
+    "mtime": 1795708458.0737386,
+    "seen": 1795708629.18241,
+    "ast_hash": "f601e84d81216e92c93d20977c500924",
     "semantic_hash": ""
   }
 }

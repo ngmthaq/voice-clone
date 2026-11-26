@@ -99,6 +99,8 @@ Some delay always remains: the voice is converted in blocks (0.4 seconds by defa
 
 ### Measure the speed
 
+The run script measures the speed the first time you run it and saves the result. To measure again, run `python -m voice_clone measure-speed` (after you activate `.venv`), or press **Measure speed** on the **Check setup** screen. If no preset keeps up, it saves the lightest one (Minimal). The settings file has `speed_measured = true` once this has run. Set it to `false` to make `scripts/run.sh` or `scripts\run.ps1` measure again.
+
 To see which preset your computer can run, without a microphone:
 
 ```bash

@@ -161,6 +161,9 @@ class SetupController:
         else:
             self._events.append(("done", ""))
 
+    def install_applio_cli(self, report: Callable[[str], None]) -> None:
+        Applio(training_dir() / ".applio").ensure_installed(report=report)
+
     def drain_events(self) -> list[tuple[str, str]]:
         drained: list[tuple[str, str]] = []
         while self._events:
@@ -198,6 +201,25 @@ class SetupController:
             logger.exception("Speed test failed")
             return (f"Error: {exc or type(exc).__name__}", "error")
         return _measure_message(best, results)
+
+    def measure_speed_cli(self, if_needed: bool, report: Callable[[str], None]) -> bool:
+        if if_needed and load_settings().speed_measured:
+            return True
+        if not base_models_present(models_dir()):
+            report(f"Speed test skipped: {MISSING_MODELS_MESSAGE}")
+            return False
+        try:
+            best, results = measure_and_save(
+                on_result=lambda name, result: report(
+                    f"Measuring speed: {_preset_title(name)} load {result.p95_load:.2f}"
+                )
+            )
+        except VoiceCloneError as exc:
+            report(f"Error: {exc}")
+            return False
+        text, _ = _measure_message(best, results)
+        report(f"Warning: {text}" if best is None else text)
+        return True
 
     def prepare_bench(
         self, voice: str | None, cpu: bool, threads: int | None, precision: str | None

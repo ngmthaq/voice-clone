@@ -100,6 +100,7 @@ class Applio:
             f"Step 3/{INSTALL_STEPS}: Installing Applio's Python packages, with PyTorch "
             "(a few GB, can take a while)…"
         )
+        self._runner([*pip, "pip-system-certs"], cwd=self.source_dir)
         self._runner([*pip, "--upgrade", "pip"], cwd=self.source_dir)
         install = [*pip, "-r", "requirements-engine.txt"]
         if self._platform == "win32":

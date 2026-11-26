@@ -55,9 +55,25 @@ def test_install_runs_clone_venv_requirements_and_prerequisites(tmp_path: Path) 
     applio.ensure_installed()
 
     steps = [_step(args) for args, _, _ in runner.calls]
-    assert steps == ["clone", "venv", "pip", "pip", "prerequisites"]
+    assert steps == ["clone", "venv", "pip", "pip", "pip", "prerequisites"]
     assert runner.calls[1][0][:3] == ["/bin/python3.12", "-m", "venv"]
     assert applio.is_installed
+
+
+@pytest.mark.parametrize("platform", ["darwin", "win32"])
+def test_install_adds_pip_system_certs_right_after_venv_and_before_pip_upgrade(
+    tmp_path: Path, platform: str
+) -> None:
+    applio, runner = _make(tmp_path, platform=platform)
+
+    applio.ensure_installed()
+
+    commands = [args for args, _, _ in runner.calls]
+    python = str(applio.python)
+    certs = [python, "-m", "pip", "install", "pip-system-certs"]
+    upgrade = [python, "-m", "pip", "install", "--upgrade", "pip"]
+    assert commands[2] == certs
+    assert commands[3] == upgrade
 
 
 def test_install_is_skipped_when_marker_matches(tmp_path: Path) -> None:
