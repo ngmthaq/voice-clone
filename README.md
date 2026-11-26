@@ -21,7 +21,7 @@ It runs in the terminal (a Textual TUI).
 | [INSTALL.md](docs/INSTALL.md) | Prerequisites, install on macOS and Windows (with or without an NVIDIA card), first start, Check setup |
 | [USAGE.md](docs/USAGE.md) | Change your voice, keys, settings that make the voice match better, logs |
 | [TRAINING.md](docs/TRAINING.md) | Record and train your own voice, in the app or with a command; options and troubleshooting |
-| [READING_SCRIPT.md](docs/READING_SCRIPT.md) | A text to read aloud while you record (about 12–15 minutes) |
+| [READING_SCRIPT.md](docs/READING_SCRIPT.md) | A text to read aloud while you record (10 parts, about 20 minutes) |
 | [VOICES.md](docs/VOICES.md) | Voice files, adding a voice you already have, moving voices between computers with a GitHub Release |
 
 ## Responsible use

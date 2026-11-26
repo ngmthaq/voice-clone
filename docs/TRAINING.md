@@ -37,7 +37,7 @@ The app itself must already be installed (see [INSTALL.md](INSTALL.md)), and its
 | Keep the **same mic and distance** the whole time (about 20–30 cm). | Changes in distance change the tone. |
 | Talk **naturally**, with some louder, softer, higher and lower parts. | The model learns your whole range. |
 
-To help, read the script in [`docs/READING_SCRIPT.md`](READING_SCRIPT.md). It takes about 12–15 minutes.
+To help, read the script in [`docs/READING_SCRIPT.md`](READING_SCRIPT.md). It takes about 20 minutes.
 
 **On iPhone:** set **Settings → Apps → Voice Memos → Audio Quality → Lossless**, record in Voice Memos, then AirDrop the file to the computer.
 
